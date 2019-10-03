@@ -22,7 +22,7 @@ namespace Client
         static void DisplayOtherUser()
         {
             Console.WriteLine("Voici les autres utilisateurs:");
-            foreach(var user in connected_users.Values)
+            foreach (var user in connected_users.Values)
             {
                 user.Display();
             }
@@ -44,7 +44,7 @@ namespace Client
 
             //entering the commands loop
             bool continuer = true;
-            while(continuer)
+            while (continuer)
             {
                 Console.WriteLine("Que voulez-vous faire?" +
                     "\n\t0-envoyer un message" +
@@ -52,7 +52,7 @@ namespace Client
                     "\n\t2-changer de UserName" +
                     "\n\t3-afficher les utilisateurs connectés");
                 string choice = Console.ReadLine();
-                if(choice == "0")
+                if (choice == "0")
                 {
 
                     Console.WriteLine("entrez un message");
@@ -78,7 +78,7 @@ namespace Client
                 {
                     Console.WriteLine("Commande inconnue");
                 }
-                
+
             }
 
         }
@@ -108,11 +108,11 @@ namespace Client
                         {
                             Messaging.RecieveMessage(following_bytes);
                         }
-                        else if(cmd_type == NomCommande.USN)
+                        else if (cmd_type == NomCommande.USN)
                         {
 
                         }
-                        else if(cmd_type == NomCommande.OUS)
+                        else if (cmd_type == NomCommande.OUS)
                         {
 
                         }
