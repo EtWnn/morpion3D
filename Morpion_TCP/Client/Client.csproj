@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DE398305-8490-45E2-AE2D-9712A4845DC9}</ProjectGuid>
+    <ProjectGuid>{00792353-E1A0-48AB-9314-7A07031D0A98}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Client2</RootNamespace>
-    <AssemblyName>Client2</AssemblyName>
+    <RootNamespace>Client</RootNamespace>
+    <AssemblyName>Client</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -43,17 +43,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Client2.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="Functions\Messaging.cs" />
+    <Compile Include="Models\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ConsoleApp1\Client.csproj">
-      <Project>{2e1c1258-01c8-4205-b920-3af6a87f55ef}</Project>
-      <Name>Client</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Serveur\Serveur.csproj">
       <Project>{fe613a46-6a2f-4c3c-bfc3-d70169a28aa0}</Project>
       <Name>Serveur</Name>
