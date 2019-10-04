@@ -19,9 +19,10 @@ namespace Client
 
         private static Mutex mutex = new Mutex();
         public static Dictionary<int, User> connected_users = new Dictionary<int, User>();
+
         static void DisplayOtherUser()
         {
-            Console.WriteLine("Voici les autres utilisateurs:");
+            Console.WriteLine($"Voici les {connected_users.Count} autres utilisateurs:");
             foreach (var user in connected_users.Values)
             {
                 user.Display();
