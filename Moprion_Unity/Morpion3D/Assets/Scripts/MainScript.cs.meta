@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 8215f42e21f4a1c489b8a2d5b717fd7f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - CameraHandlerGO: {instanceID: 0}
+  - MainMenu: {fileID: 3439689235707961199, guid: 824cd905d5c7bc345a917fd7eee10ad2,
+      type: 3}
+  - Cubelet: {fileID: 9097258796810206238, guid: 10fa71cad4c9d314e9955239bddb1df5,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
