@@ -43,7 +43,7 @@ namespace Serveur.Models
         public UserHandler(TcpClient inClientSocket)
         {
             this.clientSocket = inClientSocket;
-            this.UserName = "default";
+            this.UserName = "default_" + next_id.ToString();
             this.Id = next_id;
 
             mutex.WaitOne();
@@ -65,6 +65,7 @@ namespace Serveur.Models
         {
             bool continuer = true;
             NetworkStream stream = this.clientSocket.GetStream();
+            Messaging.SendMessage(stream, "Hi new user!");
 
             while (continuer)
             {
@@ -82,7 +83,10 @@ namespace Serveur.Models
                         //Console.WriteLine($" >> command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
 
                         byte[] following_bytes = new byte[following_length];
-                        stream.Read(following_bytes, 0, following_bytes.Length);
+                        if(following_length > 0)
+                        {
+                            stream.Read(following_bytes, 0, following_bytes.Length);
+                        }
 
                         byte[] response = UserHandler.methods[(NomCommande)Enum.Parse(typeof(NomCommande), cmd)](following_bytes, this);
 
@@ -106,7 +110,7 @@ namespace Serveur.Models
 
         public byte[] ToBytes()
         {
-            var id_bytes = BitConverter.GetBytes((Int16)this.UserName.Length);
+            var id_bytes = BitConverter.GetBytes((Int16)this.Id);
             var username_length_bytes = BitConverter.GetBytes((Int16)this.UserName.Length);
             var username_bytes = Encoding.UTF8.GetBytes(this.UserName);
 

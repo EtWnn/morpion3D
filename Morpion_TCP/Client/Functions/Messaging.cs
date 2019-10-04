@@ -25,9 +25,31 @@ namespace Client.Functions
             Console.WriteLine($" >> message recieved from the serveur: {message}");
         }
 
-        public static void RecieveAllUsers(byte[] bytes, ref Dictionary<int, User> connected_users)
+        public static void AskOtherUsers(NetworkStream stream)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(NomCommande.OUS.ToString());
+            //length of the content in bytes
+            var args_length = BitConverter.GetBytes((Int16)0); 
+            
+
+
+            byte[] msg = new byte[cmd.Length + args_length.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            args_length.CopyTo(msg, cmd.Length);
+
+            //envoie de la requête
+            stream.Write(msg, 0, msg.Length);
+
+        }
+
+        public static void RecieveOtherUsers(byte[] bytes, ref Dictionary<int, User> connected_users)
         {
             int n_users = BitConverter.ToInt16(bytes, 0);
+            //Console.WriteLine($"I recieved {n_users} users");
             connected_users = new Dictionary<int, User>();
             int byte_compt = 2;
             for(int i = 0; i < n_users; i++)
@@ -44,7 +66,7 @@ namespace Client.Functions
         public static void SendMessage(NetworkStream stream, string message)
         {
             //command in bytes
-            var cmd = Encoding.UTF8.GetBytes("MSG");
+            var cmd = Encoding.UTF8.GetBytes(NomCommande.MSG.ToString());
             //length of the content in bytes
             var message_length = BitConverter.GetBytes((Int16)message.Length);
             //content in bytes
@@ -69,7 +91,7 @@ namespace Client.Functions
         public static void SendUserName(NetworkStream stream, string userName)
         {
             //command in bytes
-            var cmd = Encoding.UTF8.GetBytes("USN");
+            var cmd = Encoding.UTF8.GetBytes(NomCommande.USN.ToString());
             //length of the content in bytes
             var message_length = BitConverter.GetBytes((Int16)userName.Length);
             //content in bytes

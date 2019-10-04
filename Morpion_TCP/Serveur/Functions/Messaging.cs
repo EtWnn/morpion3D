@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -45,34 +46,35 @@ namespace Serveur.Functions
                 total_users_bytes += e.Length;
             }
 
-            byte[] cmd = Encoding.UTF8.GetBytes("AID");
-            byte[] length_bytes = BitConverter.GetBytes((Int16)total_users_bytes);
+            //Console.WriteLine($"I have {bytes_users.Count()} other users connected");
+            byte[] n_users_bytes = BitConverter.GetBytes((Int16)bytes_users.Count());
 
-            byte[] response = new byte[cmd.Length + length_bytes.Length + total_users_bytes];
+            byte[] cmd = Encoding.UTF8.GetBytes(NomCommande.OUS.ToString());
+            byte[] length_bytes = BitConverter.GetBytes((Int16)(n_users_bytes.Length + total_users_bytes));
+            
 
-            cmd.CopyTo(response, 0);
-            length_bytes.CopyTo(response, cmd.Length);
+            byte[] response = new byte[cmd.Length + length_bytes.Length + n_users_bytes.Length + total_users_bytes];
 
-            int compt = cmd.Length + length_bytes.Length;
+            int compt = 0;
+            cmd.CopyTo(response, compt); compt += cmd.Length;
+            length_bytes.CopyTo(response, compt); compt += length_bytes.Length;
+            n_users_bytes.CopyTo(response, compt); compt += n_users_bytes.Length;
             foreach(var e in bytes_users)
             {
                 e.CopyTo(response, compt);
                 compt += e.Length;
             }
 
-
+            string cmd_string = System.Text.Encoding.UTF8.GetString(response, 0, response.Length);
             Console.WriteLine($" >> The client {userHandler.UserName} Id {userHandler.Id} asked for all connected user");
+            //Console.WriteLine($" >> packet sent {cmd_string}");
             return response;
         }
 
-
-        /* A message is composed by the commande "MSG" on 3 octets, the length of the content on 2 octets and the content
-         * in short : MSG + length + content
-         */
-        public static byte[] MessageToByte(string message) 
+        public static void SendMessage(NetworkStream stream, string message)
         {
             //command in bytes
-            var cmd = Encoding.UTF8.GetBytes("MSG");
+            var cmd = Encoding.UTF8.GetBytes(NomCommande.MSG.ToString());
             //length of the content in bytes
             var message_length = BitConverter.GetBytes((Int16)message.Length);
             //content in bytes
@@ -88,16 +90,10 @@ namespace Serveur.Functions
             //content
             message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
 
-            return msg;
+
+            //envoie de la requête
+            stream.Write(msg, 0, msg.Length);
         }
-
-        public static string ByteToMessage(byte[] msg)
-        {
-            int len_content = BitConverter.ToInt16(msg, 3);
-            string content = System.Text.Encoding.UTF8.GetString(msg, 5, len_content);
-            return content;
-        }
-
-
+        
     }
 }

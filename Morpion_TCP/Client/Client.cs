@@ -18,7 +18,7 @@ namespace Client
         private static IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
         private static Mutex mutex = new Mutex();
-        public static Dictionary<int, User> connected_users;
+        public static Dictionary<int, User> connected_users = new Dictionary<int, User>();
         static void DisplayOtherUser()
         {
             Console.WriteLine("Voici les autres utilisateurs:");
@@ -42,6 +42,10 @@ namespace Client
             sender.Connect(remoteEP);
             NetworkStream stream = new NetworkStream(sender);
 
+            //launching the listening thread
+            Thread listeningThread = new Thread(() => Listen(stream));
+            listeningThread.Start();
+
             //entering the commands loop
             bool continuer = true;
             while (continuer)
@@ -62,7 +66,8 @@ namespace Client
                 }
                 else if (choice == "1")
                 {
-
+                    Messaging.AskOtherUsers(stream);
+                    Console.WriteLine("La demande a été émise");
                 }
                 else if (choice == "2")
                 {
@@ -85,7 +90,7 @@ namespace Client
 
         static void Listen(NetworkStream stream)
         {
-            bool continuer = false;
+            bool continuer = true;
             while (continuer)
             {
 
@@ -102,26 +107,25 @@ namespace Client
                         byte[] following_bytes = new byte[following_length];
                         stream.Read(following_bytes, 0, following_bytes.Length);
 
+                        //Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {NombreOctets}");
+
+                        string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
                         NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
 
                         if (cmd_type == NomCommande.MSG)
                         {
                             Messaging.RecieveMessage(following_bytes);
                         }
-                        else if (cmd_type == NomCommande.USN)
-                        {
-
-                        }
                         else if (cmd_type == NomCommande.OUS)
                         {
-
+                            Messaging.RecieveOtherUsers(following_bytes, ref connected_users);
                         }
                     }
 
 
 
                 }
-                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
+                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     continuer = false;
                     Console.WriteLine(" >> " + ex.ToString());
