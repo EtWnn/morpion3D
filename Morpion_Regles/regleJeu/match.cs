@@ -24,6 +24,9 @@ namespace regleJeu
     {
         Joueur1,
         Joueur2,
+        Player1Won,
+        Player2Won,
+        NoneWon,
     }
 
     [Serializable]
@@ -85,6 +88,7 @@ namespace regleJeu
             {
                 Console.WriteLine("fin fin a cause du calcul fin jeu");
                 FinJeu = true;
+                Mode = ModeJeu.NoneWon;
             }
         }
         private List<Vector3> CombinaisonGagnante( Vector3 nouvellePosition)
@@ -126,11 +130,12 @@ namespace regleJeu
         }
         private void PlacerJeton(Vector3 position, bool combinaisonGagnante)
         {
-            if (Mode == ModeJeu.Joueur1)
+            if (Mode == ModeJeu.Joueur1 ||Mode == ModeJeu.Player1Won)
             {
                 if (combinaisonGagnante)
                 {
                     MatricePlateau[(int)position.X, (int)position.Y, (int)position.Z] = (int)Case.SurbrillanceJoueur1;
+                    Mode = ModeJeu.Player1Won;
                 }
                 else
                 {
@@ -139,11 +144,12 @@ namespace regleJeu
                 }
                 PositionsJoueesJoueur1.Add(position);
             }
-            else if (Mode == ModeJeu.Joueur2)
+            else if (Mode == ModeJeu.Joueur2||Mode == ModeJeu.Player2Won)
             {
                 if (combinaisonGagnante)
                 {
                     MatricePlateau[(int)position.X, (int)position.Y, (int)position.Z] = (int)Case.SurbrillanceJoueur2;
+                    Mode = ModeJeu.Player2Won;
                 }
                 else
                 {

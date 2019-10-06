@@ -11,7 +11,12 @@ namespace regleJeu
     {
         static void Main(string[] args)
         {
-           Test.LaunchRandomGameShowFinalState();
+           for (int i=0; i<100;i++)
+           {
+                bool test = Test.GamePlayer1Win();
+                Console.WriteLine(test.ToString());
+           }
+           Console.ReadKey();
         }
     }
 }

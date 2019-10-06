@@ -17,7 +17,6 @@ namespace regleJeu
             MemoryStream mems = new System.IO.MemoryStream();
             serializer.Serialize(mems, match);
             string _str = Encoding.UTF8.GetString(mems.ToArray());
-
             Byte[] data = Encoding.UTF8.GetBytes(_str);
             return data;
         }
