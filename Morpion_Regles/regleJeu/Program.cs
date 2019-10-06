@@ -11,12 +11,10 @@ namespace regleJeu
     {
         static void Main(string[] args)
         {
-           for (int i=0; i<100;i++)
-           {
-                bool test = Test.GamePlayer1Win();
-                Console.WriteLine(test.ToString());
-           }
-           Console.ReadKey();
+            bool test = Test.TestSerializationOfOnePosition();
+            Console.WriteLine(test.ToString());
+
+            Console.ReadKey();
         }
     }
 }

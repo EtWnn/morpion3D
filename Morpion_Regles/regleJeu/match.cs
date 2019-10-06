@@ -173,7 +173,7 @@ namespace regleJeu
             return aGagne;
         }
 
-        public void afficher(int[,,] tab)
+        public static void afficher(int[,,] tab)
         {
             string aff = "";
             for (int x = 0; x < TAILLEPLATEAU; x++)

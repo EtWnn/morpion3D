@@ -16,7 +16,7 @@ namespace regleJeu
             int x = 0;
             int y = 0;
             int z = 0;
-            match1.afficher(match1.MatricePlateau);
+            Match.afficher(match1.MatricePlateau);
             while (!match1.FinJeu)
             {
                 Console.WriteLine("C'est le tour de {0}", match1.Mode);
@@ -31,7 +31,7 @@ namespace regleJeu
                 position.Z = z;
                 match1.Jouer(position);
                 Console.WriteLine("Plateau");
-                match1.afficher(match1.MatricePlateau);
+                Match.afficher(match1.MatricePlateau);
                 Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);
             }
             Console.ReadKey();
@@ -51,17 +51,18 @@ namespace regleJeu
                 Console.WriteLine("Le {0} joue la position couche : {1}, ligne : {2}, colonne : {3}", match1.Mode, position.X, position.Y, position.Z);
                 match1.Jouer(position);
                 Console.WriteLine("Statut Plateau");
-                match1.afficher(match1.MatricePlateau);
+                Match.afficher(match1.MatricePlateau);
                 Console.WriteLine("\n ----------------------");
                 Console.ReadKey();
             }
             Console.WriteLine("\n ----------------------");
             Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);
             Console.WriteLine("Statut Plateau Fin Jeu");
-            match1.afficher(match1.MatricePlateau);
+            Match.afficher(match1.MatricePlateau);
             Console.WriteLine("\n ----------------------");
             Console.ReadKey();
         }
+
         public static void LaunchRandomGameShowFinalState()
         {
             Random rnd = new Random();
@@ -79,10 +80,11 @@ namespace regleJeu
             Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);
             Console.WriteLine("Mode : {0}", match1.Mode);
             Console.WriteLine("Statut Plateau Fin Jeu");
-            match1.afficher(match1.MatricePlateau);
+            Match.afficher(match1.MatricePlateau);
             Console.WriteLine("\n ----------------------");
             Console.ReadKey();
         }
+
         public static bool GamePlayer1Win()
         {
             bool test = true;
@@ -126,31 +128,96 @@ namespace regleJeu
             return test;
             
         }
-        public static void LaunchRandomGameWithSerialization()
+
+        public static void RandomGameWithSerializationOfOneGameStatus(int numberRoundSerialization)
         {
             Random rnd = new Random();
             Match match1 = new Match();
+            Match match2 = new Match();
             Vector3 position = new Vector3();
-            while (!match1.FinJeu)
+            int compt = 0;
+            bool Match2Created = false;
+            bool error = false;
+            int taillePlateau = 3;
+            while (match1.FinJeu != true)
             {
-                position.X = rnd.Next(0, 3);
-                position.Y = rnd.Next(0, 3);
-                position.Z = rnd.Next(0, 3);
-                Console.WriteLine("\n ----------------------");
-                Console.WriteLine("Le {0} joue la position couche : {1}, ligne : {2}, colonne : {3}", match1.Mode, position.X, position.Y, position.Z);
-                match1.Jouer(position);
-                Console.WriteLine("Statut Plateau");
-                match1.afficher(match1.MatricePlateau);
+            position.X = rnd.Next(0, 3);
+            position.Y = rnd.Next(0, 3);
+            position.Z = rnd.Next(0, 3);
+            match1.Jouer(position);
+            if (compt == numberRoundSerialization)
+            {
                 byte[] data = Serialize.SerializationMatchStatus(match1);
-                Console.WriteLine("\n ----------------------");
-                Console.ReadKey();
+                match2 = Serialize.DeserializationMatchStatus(data);
+                Match2Created = true;
+                for (int x = 0; x < taillePlateau; x++)
+                {
+                    for (int y = 0; y < taillePlateau; y++)
+                    {
+                        for (int z = 0; z < taillePlateau; z++)
+                        {
+                            if (match1.MatricePlateau[x,y,z] != match2.MatricePlateau[x,y,z])
+                            {
+                                Console.WriteLine("Erreur de plateau");
+                                Console.WriteLine("Plateau match 1");
+                                Match.afficher(match1.MatricePlateau);
+                                Console.WriteLine("Plateau match 2");
+                                Match.afficher(match2.MatricePlateau);
+                                error =true;
+                            }
+                            
+                        }
+                    }
+                }
+                if (match1.Mode != match2.Mode)
+                {
+                    Console.WriteLine("Erreur de mode");
+                    Console.WriteLine("Mode match 1 : {0}", match1.Mode);
+                    Console.WriteLine("Mode match 2 : {0}", match2.Mode);
+                    error =true;
+                }
+                if (!error)
+                {
+                Console.WriteLine("Serialization suceed");
+                }
             }
-            Console.WriteLine("\n ----------------------");
-            Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);
-            Console.WriteLine("Statut Plateau Fin Jeu");
-            match1.afficher(match1.MatricePlateau);
-            Console.WriteLine("\n ----------------------");
+            compt++;
+            }
+            if (!Match2Created)
+            {
+                Console.WriteLine("Pas assez de tours joues.\n Nombre de tours joues : {0}. \n Numero du tour auquel un match parallele devait etre cree : {1}.", compt, numberRoundSerialization);
+            }
             Console.ReadKey();
+        }
+
+        public static bool TestSerializationOfOnePosition()
+        {
+            Random rnd = new Random();
+            Vector3 position = new Vector3();
+            Vector3 position2 = new Vector3();
+            bool error = false;
+            position.X = rnd.Next(0, 3);
+            position.Y = rnd.Next(0, 3);
+            position.Z = rnd.Next(0, 3);
+            byte[] data = Serialize.SerializationPositionPlayed(position);
+            position2=Serialize.DeserializationPositionPlayed(data);
+            if (position.X != position2.X)
+                {
+                Console.WriteLine("Erreur de la coordonee X");
+                error = true;
+                }
+            if (position.Y != position2.Y)
+                {
+                Console.WriteLine("Erreur de la coordonee Y");
+                error = true;
+                }
+            if (position.Z != position2.Z)
+                {
+                Console.WriteLine("Erreur de la coordonee Z");
+                error = true;
+                }
+            return (!error);
+           
         }
     }
 }
