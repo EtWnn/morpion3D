@@ -16,7 +16,7 @@ namespace regleJeu
             int x = 0;
             int y = 0;
             int z = 0;
-            Match.afficher(match1.MatricePlateau);
+            Plateau.afficher(match1.MatricePlateau);
             while (!match1.FinJeu)
             {
                 Console.WriteLine("C'est le tour de {0}", match1.Mode);
@@ -31,7 +31,7 @@ namespace regleJeu
                 position.Z = z;
                 match1.Jouer(position);
                 Console.WriteLine("Plateau");
-                Match.afficher(match1.MatricePlateau);
+                Plateau.afficher(match1.MatricePlateau);
                 Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);
             }
             Console.ReadKey();
@@ -51,14 +51,14 @@ namespace regleJeu
                 Console.WriteLine("Le {0} joue la position couche : {1}, ligne : {2}, colonne : {3}", match1.Mode, position.X, position.Y, position.Z);
                 match1.Jouer(position);
                 Console.WriteLine("Statut Plateau");
-                Match.afficher(match1.MatricePlateau);
+                Plateau.afficher(match1.MatricePlateau);
                 Console.WriteLine("\n ----------------------");
                 Console.ReadKey();
             }
             Console.WriteLine("\n ----------------------");
             Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);
             Console.WriteLine("Statut Plateau Fin Jeu");
-            Match.afficher(match1.MatricePlateau);
+            Plateau.afficher(match1.MatricePlateau);
             Console.WriteLine("\n ----------------------");
             Console.ReadKey();
         }
@@ -80,7 +80,7 @@ namespace regleJeu
             Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);
             Console.WriteLine("Mode : {0}", match1.Mode);
             Console.WriteLine("Statut Plateau Fin Jeu");
-            Match.afficher(match1.MatricePlateau);
+            Plateau.afficher(match1.MatricePlateau);
             Console.WriteLine("\n ----------------------");
             Console.ReadKey();
         }
@@ -160,9 +160,9 @@ namespace regleJeu
                             {
                                 Console.WriteLine("Erreur de plateau");
                                 Console.WriteLine("Plateau match 1");
-                                Match.afficher(match1.MatricePlateau);
+                                Plateau.afficher(match1.MatricePlateau);
                                 Console.WriteLine("Plateau match 2");
-                                Match.afficher(match2.MatricePlateau);
+                                Plateau.afficher(match2.MatricePlateau);
                                 error =true;
                             }
                             

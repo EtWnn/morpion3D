@@ -40,13 +40,12 @@ namespace regleJeu
         public int[,,] MatricePlateau { get; set; } //La matrice du plateau
 
         [XmlArray("MatricePlateau")]
-        public int[] ReadingsDto 
+        public int[] MatricePlateauDto 
         { 
-        get { return Flatten(MatricePlateau); }
-        set { MatricePlateau = Expand(value); }
+        get { return Plateau.Flatten(MatricePlateau, TAILLEPLATEAU); }
+        set { MatricePlateau = Plateau.Expand(value, TAILLEPLATEAU); }
         }
         
-
         private const int TAILLEPLATEAU = 3; // Dimension du plateau
         private List<Vector3> PositionsJoueesJoueur1 { get; set; } = new List<Vector3>();
         private List<Vector3> PositionsJoueesJoueur2 { get; set; } = new List<Vector3>();
@@ -82,6 +81,7 @@ namespace regleJeu
                 // a definir
             }
         }
+
         private void CalculFinJeu()
         {
             if (PositionsJoueesJoueur1.Count + PositionsJoueesJoueur2.Count == TAILLEPLATEAU * TAILLEPLATEAU * TAILLEPLATEAU)
@@ -91,6 +91,7 @@ namespace regleJeu
                 Mode = ModeJeu.NoneWon;
             }
         }
+
         private List<Vector3> CombinaisonGagnante( Vector3 nouvellePosition)
         {
             bool combinaisonGagnante = false;
@@ -128,6 +129,7 @@ namespace regleJeu
             }
             return listePositionsGagnantes;
         }
+
         private void PlacerJeton(Vector3 position, bool combinaisonGagnante)
         {
             if (Mode == ModeJeu.Joueur1 ||Mode == ModeJeu.Player1Won)
@@ -159,6 +161,7 @@ namespace regleJeu
                 PositionsJoueesJoueur2.Add(position);
             }
         }
+
         private Boolean Alignement(Vector3 point1, Vector3 point2, Vector3 point3)
         {
             Boolean aGagne = false;
@@ -173,55 +176,6 @@ namespace regleJeu
             return aGagne;
         }
 
-        public static void afficher(int[,,] tab)
-        {
-            string aff = "";
-            for (int x = 0; x < TAILLEPLATEAU; x++)
-            {
-                for (int y = 0; y < TAILLEPLATEAU; y++)
-                {
-                    for (int z = 0; z < TAILLEPLATEAU; z++)
-                    {
-                        aff += tab[x, y, z].ToString() + '\t';
-                    }
-                    aff += '\n';
-                }
-                aff += "\n\n";
-            }
-            Console.WriteLine(aff);
-        }
-        public static T[] Flatten<T>(T[,,] arr)
-        {
-        T[] arrFlattened = new T[TAILLEPLATEAU * TAILLEPLATEAU * TAILLEPLATEAU];
-        for (int i = 0; i < TAILLEPLATEAU; i++)
-        {
-            for (int j = 0; j < TAILLEPLATEAU; j++)
-                {
-                for (int k=0; k<TAILLEPLATEAU;k++)
-                    {
-                        var test = arr[k, j,i];
-                        arrFlattened[k+TAILLEPLATEAU * (j+TAILLEPLATEAU * i)] = arr[k, j, i];
-                    }
-                }
-        }
-        return arrFlattened;
-        }
         
-        public static T[,,] Expand<T>(T[] arr)
-        {
-        T[,,] arrExpanded = new T[TAILLEPLATEAU, TAILLEPLATEAU,TAILLEPLATEAU];
-        for (int i = 0; i < TAILLEPLATEAU; i++)
-        {
-            for (int j = 0; j < TAILLEPLATEAU; j++)
-                {
-                for (int k=0; k<TAILLEPLATEAU;k++)
-                    {
-                        arrExpanded[k,j,i] = arr[k+TAILLEPLATEAU * (j+TAILLEPLATEAU * i)];
-                    }
-                }
-        }
-        return arrExpanded;
-        }
-
     }
 }
