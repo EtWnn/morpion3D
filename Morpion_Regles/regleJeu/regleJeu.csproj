@@ -48,6 +48,7 @@
     <Compile Include="Plateau.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Serialize.cs" />
+    <Compile Include="Test.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -81,8 +81,9 @@ namespace regleJeu
         }
         private void CalculFinJeu()
         {
-            if (PositionsJoueesJoueur1.Count + PositionsJoueesJoueur2.Count == TAILLEPLATEAU * TAILLEPLATEAU)
+            if (PositionsJoueesJoueur1.Count + PositionsJoueesJoueur2.Count == TAILLEPLATEAU * TAILLEPLATEAU * TAILLEPLATEAU)
             {
+                Console.WriteLine("fin fin a cause du calcul fin jeu");
                 FinJeu = true;
             }
         }
