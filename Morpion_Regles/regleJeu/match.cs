@@ -4,11 +4,14 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+using System.Xml;
+
 
 namespace regleJeu
 {
     // L'etat d'une case du morpion
-    enum Case
+    public enum Case
     {
         Vide = 0,
         MotifJoueur1 = 1,
@@ -17,18 +20,29 @@ namespace regleJeu
         SurbrillanceJoueur2 = 4
     };
 
-    enum ModeJeu
+    public enum ModeJeu
     {
         Joueur1,
         Joueur2,
     }
 
-    class Match
+    [Serializable]
+    public class Match
     {
      
         public ModeJeu Mode { get; set; } //Joueur qui peut jouer 
-        public int[,,] MatricePlateau { get; set; } //La matrice du plateau
         public bool FinJeu { get; set; } = false; //booleen pour declarer la fin de la partie
+
+        [XmlIgnore]
+        public int[,,] MatricePlateau { get; set; } //La matrice du plateau
+
+        [XmlArray("MatricePlateau")]
+        public int[] ReadingsDto 
+        { 
+        get { return Flatten(MatricePlateau); }
+        set { MatricePlateau = Expand(value); }
+        }
+        
 
         private const int TAILLEPLATEAU = 3; // Dimension du plateau
         private List<Vector3> PositionsJoueesJoueur1 { get; set; } = new List<Vector3>();
@@ -168,6 +182,38 @@ namespace regleJeu
                 aff += "\n\n";
             }
             Console.WriteLine(aff);
+        }
+        public static T[] Flatten<T>(T[,,] arr)
+        {
+        T[] arrFlattened = new T[TAILLEPLATEAU * TAILLEPLATEAU * TAILLEPLATEAU];
+        for (int i = 0; i < TAILLEPLATEAU; i++)
+        {
+            for (int j = 0; j < TAILLEPLATEAU; j++)
+                {
+                for (int k=0; k<TAILLEPLATEAU;k++)
+                    {
+                        var test = arr[k, j,i];
+                        arrFlattened[k+TAILLEPLATEAU * (j+TAILLEPLATEAU * i)] = arr[k, j, i];
+                    }
+                }
+        }
+        return arrFlattened;
+        }
+        
+        public static T[,,] Expand<T>(T[] arr)
+        {
+        T[,,] arrExpanded = new T[TAILLEPLATEAU, TAILLEPLATEAU,TAILLEPLATEAU];
+        for (int i = 0; i < TAILLEPLATEAU; i++)
+        {
+            for (int j = 0; j < TAILLEPLATEAU; j++)
+                {
+                for (int k=0; k<TAILLEPLATEAU;k++)
+                    {
+                        arrExpanded[k,j,i] = arr[k+TAILLEPLATEAU * (j+TAILLEPLATEAU * i)];
+                    }
+                }
+        }
+        return arrExpanded;
         }
 
     }

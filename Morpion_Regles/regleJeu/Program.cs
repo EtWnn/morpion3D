@@ -30,6 +30,9 @@ namespace regleJeu
                 z = (int.Parse(Console.ReadLine()));
                 position.Z = z;
                 match1.Jouer(position);
+
+                byte[] StatusGame = Serialize.SerializationMatchStatus(match1);
+
                 Console.WriteLine("Plateau");
                 match1.afficher(match1.MatricePlateau);
                 Console.WriteLine("Fin du jeu : {0}", match1.FinJeu);

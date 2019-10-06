@@ -47,6 +47,7 @@
     <Compile Include="Match.cs" />
     <Compile Include="Plateau.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Serialize.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
