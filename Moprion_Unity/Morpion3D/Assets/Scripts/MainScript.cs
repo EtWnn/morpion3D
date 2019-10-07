@@ -1,41 +1,51 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 public class MainScript : MonoBehaviour
 {
-    public enum EApplicationState
+    public enum EState
     {
         ToMenu,
-        MainMenu,
-        OptionMenu,
+        InMainMenu,
+        InOptionMenu,
         ToGame,
         InGame,
     }
+
+    public EState State 
+    { 
+        get => State;
+        private set { StateChange(this, EventArgs.Empty); State = value; }
+    }
+
+    public event EventHandler StateChange;
+    
+    private Action updateFunction;
 
     public GameObject CameraHandlerPrefab;
     private CameraScript cameraScript;
 
     public GameObject MainMenuPrefab;
+    // private MainMenuScript mainMenuScript;
 
     public GameObject GridPrefab;
     private GridScript gridScript;
 
-    public EApplicationState AppState { get; private set; }
-    private Action updateFunction;
 
     // Start is called before the first frame update
     void Start()
     {
-        CameraHandlerPrefab = Instantiate(CameraHandlerPrefab);
+        CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         cameraScript = CameraHandlerPrefab.GetComponent<CameraScript>();
         
-        MainMenuPrefab = Instantiate(MainMenuPrefab);
-        
-        GridPrefab = Instantiate(GridPrefab);
+        MainMenuPrefab = Instantiate(MainMenuPrefab, transform);
+
+        GridPrefab = Instantiate(GridPrefab, transform);
         gridScript = GridPrefab.GetComponent<GridScript>();
 
-        AppState = EApplicationState.MainMenu;
+        State = EState.InMainMenu;
         updateFunction = NoOpBehaviour;
     }
 
@@ -51,22 +61,27 @@ public class MainScript : MonoBehaviour
         if (IsReadyGame())
         {
             cameraScript.UpdateCameraState(CameraScript.ECameraState.InGame);
-            AppState = EApplicationState.InGame;
+            gridScript.UpdateGridState(GridScript.EState.InGame);
+            State = EState.InGame;
+            updateFunction = NoOpBehaviour;
         }
     }
 
     public void BeginToGame()
     {
+        Debug.Log("BeginToGame function");
         cameraScript.UpdateCameraState(CameraScript.ECameraState.ToGame);
+        gridScript.UpdateGridState(GridScript.EState.ToGame);
         MainMenuPrefab.SetActive(false);
-        AppState = EApplicationState.ToGame;
+        State = EState.ToGame;
+        updateFunction = ToGameBehaviour;
     }
 
     public bool IsReadyGame()
     {
         return 
             cameraScript.CamState == CameraScript.ECameraState.ReadyGame
-            && gridScript.GridState == GridScript.EGridState.ReadyGame;
+            && gridScript.GridState == GridScript.EState.ReadyGame;
     }
 }
 

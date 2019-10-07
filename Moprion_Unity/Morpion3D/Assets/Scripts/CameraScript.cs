@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 
 public class CameraScript : MonoBehaviour
 {
-    const float LERP_END_DIST = 10e-3f;
+    const float LERP_END_DIST = 10e-2f;
 
     public enum ECameraState
     {
@@ -15,10 +16,10 @@ public class CameraScript : MonoBehaviour
         InGame,
     }
 
-    public Vector3 menuPosition = new Vector3(0, 0, -5f);
-    public Vector3 gamePosition = new Vector3(0, 0, 0);
+    static public Vector3 menuPosition = new Vector3(0, 0, -5f);
+    static public Vector3 gamePosition = new Vector3(0, 0, 0);
 
-    public float CameraLerpSpeed;
+    public float CameraTransitionTime;
     public float RotationSpeed;
     public ECameraState CamState { get; private set; }
 
@@ -27,8 +28,9 @@ public class CameraScript : MonoBehaviour
     void Start()
     {
         transform.position = menuPosition;
+        Debug.Log(transform.position);
         RotationSpeed = 1;
-        CameraLerpSpeed = 100;
+        CameraTransitionTime = 5f;
         CamState = ECameraState.InMenu;
         UpdateFunction = NoOpBehaviour;
     }
@@ -40,17 +42,19 @@ public class CameraScript : MonoBehaviour
 
     private void ToGameBehaviour()
     {
-        transform.position = Vector3.Lerp(transform.position, gamePosition, CameraLerpSpeed * Time.deltaTime);
-        if (Vector3.Distance(transform.position, gamePosition) < LERP_END_DIST)
+        var itPosition = LerpMove(transform.position, gamePosition, 8);
+        if(itPosition.MoveNext())
+            transform.position = (Vector3)itPosition.Current;
+        else
         {
-            transform.position = gamePosition;
+            Debug.Log("Camera finished ToGame!");
             UpdateCameraState(ECameraState.ReadyGame);
         }
     }
 
     private void ToMenuBehaviour()
     {
-        transform.position = Vector3.Lerp(transform.position, menuPosition, CameraLerpSpeed * Time.deltaTime);
+        transform.position = Vector3.Lerp(transform.position, menuPosition, CameraTransitionTime);
         if (Vector3.Distance(transform.position, menuPosition) < LERP_END_DIST)
         {
             transform.position = menuPosition;
@@ -78,7 +82,7 @@ public class CameraScript : MonoBehaviour
 
     public void UpdateCameraState(ECameraState cameraState)
     {
-        switch (CamState)
+        switch (cameraState)
         {
             case ECameraState.ToMenu:
                 break;
@@ -95,5 +99,20 @@ public class CameraScript : MonoBehaviour
                 break;
         }
         CamState = cameraState;
+    }
+
+    IEnumerator LerpMove(Vector3 initPos, Vector3 targetPos, float duration, bool smoothed)
+    {
+
+        Func<float, float> F = (float t) => t;
+        if (smoothed)
+            F = (float t) => -  
+        float t = 0;
+        float dt = Time.timeScale / duration;
+        while ((t += dt) < 1)
+        {
+            yield return Vector3.Lerp(initPos, targetPos, t);
+        }
+        yield break;
     }
 }

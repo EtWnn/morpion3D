@@ -3,13 +3,13 @@ using UnityEngine;
 
 public class GridScript : MonoBehaviour
 {
-    public enum EGridState
+    public enum EState
     {
         ToGame,
         ReadyGame,
         InGame,
         NotInGame,
-    }
+    } 
 
     public int TransitionNumRotation;
 
@@ -19,7 +19,7 @@ public class GridScript : MonoBehaviour
 
     public GameObject CubeletPrefab;
 
-    public EGridState GridState { get; private set; }
+    public EState GridState { get; private set; }
 
     private GameObject[,,] CubeletGOs;
     private Action updateFunction;
@@ -31,6 +31,7 @@ public class GridScript : MonoBehaviour
         TransitionTime = 1;
         TransitionNumRotation = 3;
         RotatationSpeed = 10f;
+        GridState = EState.NotInGame;
         updateFunction = NotInGameBehaviour;
     }
 
@@ -40,45 +41,51 @@ public class GridScript : MonoBehaviour
         updateFunction();
     }
 
-    void UpdateGridState(EGridState gridState)
+    public void UpdateGridState(EState gridState)
     {
         switch (gridState)
         {
-            case EGridState.ToGame:
-                if (GridState != EGridState.NotInGame)
-                    throw new Exception("State change forbiden");
+            case EState.ToGame:
+                if (GridState != EState.NotInGame)
+                    throw new Exception("State change forbiden: from " + GridState + " to ToGame");
                 updateFunction = ToGameBehaviour;
                 break;
-            case EGridState.ReadyGame:
-                if (GridState != EGridState.ToGame)
-                    throw new Exception("State change forbiden");
+            case EState.ReadyGame:
+                if (GridState != EState.ToGame)
+                    throw new Exception("State change forbiden: from " + GridState + " to ReadyGame");
                 updateFunction = NoOpBehaviour;
                 break;
-            case EGridState.InGame:
-                if (GridState != EGridState.ReadyGame)
-                    throw new Exception("State change forbiden");
+            case EState.InGame:
+                if (GridState != EState.ReadyGame)
+                    throw new Exception("State change forbiden: from " + GridState + " to InGame");
                 updateFunction = InGameBehaviour;
                 break;
-            case EGridState.NotInGame:
+            case EState.NotInGame:
                 updateFunction = NotInGameBehaviour;
                 break;
             default:
                 updateFunction = NoOpBehaviour;
                 break;
         }
+
+        if (gridState != EState.InGame)
+        {
+            SetExternCubeletsActive(true);
+        }
+
         GridState = gridState;
     }
 
     private void InGameBehaviour()
     {
         if (Input.GetKeyDown(KeyCode.Space))
-            SwitchHideShowExternCubelets();
+            SetExternCubeletsActive(!CubeletGOs[0,0,0].activeInHierarchy);
     }
 
     private void ToGameBehaviour()
     {
         transform.rotation = Quaternion.Euler(0, 0, 0);
-        UpdateGridState(EGridState.ReadyGame);
+        UpdateGridState(EState.ReadyGame);
     }
 
     private void NotInGameBehaviour()
@@ -97,12 +104,20 @@ public class GridScript : MonoBehaviour
                     CubeletGOs[x, y, z] = Instantiate(CubeletPrefab, new Vector3(x - 1, y - 1, z - 1), new Quaternion(0, 0, 0, 0), transform);
     }
 
-    private void SwitchHideShowExternCubelets()
+    private void SetExternCubeletsActive(bool active)
     {
         for (var x = 0; x < 3; x++)
             for (var y = 0; y < 3; y++)
                 for (var z = 0; z < 3; z++)
                     if (x != 1 || y != 1 || z != 1)
-                        CubeletGOs[x, y, z].SetActive(!CubeletGOs[x, y, z].activeSelf);
+                        CubeletGOs[x, y, z].SetActive(active);
+    }
+
+    private void UpdateCubeletsState(CubeletScript.ECubeletState cubeletState)
+    {
+        for (var x = 0; x < 3; x++)
+            for (var y = 0; y < 3; y++)
+                for (var z = 0; z < 3; z++)
+                        CubeletGOs[x, y, z].GetComponent<CubeletScript>().UpdateCubeletState(cubeletState);
     }
 }
