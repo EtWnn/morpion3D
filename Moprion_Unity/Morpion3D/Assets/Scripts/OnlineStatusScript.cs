@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,8 +35,14 @@ public class OnlineStatusScript : MonoBehaviour
 
     public void SetOnlineStatus(bool isOnline)
     {
+        Debug.Log("Thread id in SetOnlineStatus : " + Thread.CurrentThread.Name);
         image.color = isOnline ? OnlineColor : OfflineColor;
         text.text = isOnline ? OnlineText : OfflineText;
+    }
+
+    public void OnConnected(object sender, EventArgs e)
+    {
+        SetOnlineStatus(true);
     }
 
     private void Update()

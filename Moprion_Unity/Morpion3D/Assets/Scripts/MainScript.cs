@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using MyClient;
+using System.Net;
+using System.Threading;
 
 public enum EState
 {
@@ -16,6 +19,7 @@ public enum EState
 
 public class MainScript : MonoBehaviour
 {
+    public Client client;
     private EState _state;
     public EState State 
     { 
@@ -46,6 +50,7 @@ public class MainScript : MonoBehaviour
 
     private void Awake()
     {
+        client = new Client(IPAddress.Parse("127.0.0.1"), 13000);
         State = EState.Default;
         CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         GridPrefab = Instantiate(GridPrefab, transform);
@@ -67,8 +72,12 @@ public class MainScript : MonoBehaviour
         mainMenuScript = MainMenuPrefab.GetComponent<MainMenuScript>();
         StateChange += mainMenuScript.OnStateChange;
 
-        onlineStatusScript = OnlineStatusPrefab.GetComponent<OnlineStatusScript>();
+        Debug.Log("Thread id in MainScript : " + Thread.CurrentThread.Name);
 
+        onlineStatusScript = OnlineStatusPrefab.GetComponent<OnlineStatusScript>();
+        client.Connected += onlineStatusScript.OnConnected;
+        client.Connect();
+        
         mainMenuScript.StartButton.onClick.AddListener(StartGame);
         mainMenuScript.QuitButton.onClick.AddListener(() => Application.Quit(0));
 

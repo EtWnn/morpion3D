@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Client.Functions;
-using Serveur.Models;
 using Client.Models;
 
 namespace Client
@@ -31,7 +30,7 @@ namespace Client
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Bonjour Client 1 !");
+            Console.WriteLine("Bonjour Client !");
 
             IPEndPoint remoteEP = new IPEndPoint(localAddr, port);
             Socket sender = new Socket(localAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);

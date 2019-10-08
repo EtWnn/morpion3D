@@ -1,4 +1,4 @@
-﻿using Client.Models;
+﻿using MyClient.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Client.Functions
+namespace MyClient.Functions
 {
     public enum NomCommande
     {
@@ -29,8 +29,8 @@ namespace Client.Functions
             //command in bytes
             var cmd = Encoding.UTF8.GetBytes(NomCommande.OUS.ToString());
             //length of the content in bytes
-            var args_length = BitConverter.GetBytes((Int16)0); 
-            
+            var args_length = BitConverter.GetBytes((Int16)0);
+
 
 
             byte[] msg = new byte[cmd.Length + args_length.Length];
@@ -51,7 +51,7 @@ namespace Client.Functions
             //Console.WriteLine($"I recieved {n_users} users");
             connected_users = new Dictionary<int, User>();
             int byte_compt = 2;
-            for(int i = 0; i < n_users; i++)
+            for (int i = 0; i < n_users; i++)
             {
                 int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
                 int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
