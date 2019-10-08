@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 
 public class CubeletScript : MonoBehaviour
@@ -8,25 +7,65 @@ public class CubeletScript : MonoBehaviour
     public Color HoverColor;
     public GameObject FillingItemLeftClick;
     public GameObject FillingItemRightClick;
-    public MeshRenderer MeshRenderer { get; private set; }
+    private MeshRenderer MeshRenderer;
     public GameObject CurrentFillingObject { get; private set; }
     public bool Filled { get; private set; }
 
-    // Start is called before the first frame update
-    void Start()
+    private Action updateFunction;
+    private Action onMouseOverFunction;
+    private Action onMouseExitFunction;
+
+    private void Awake()
     {
         Filled = false;
         CurrentFillingObject = null;
+
         MeshRenderer = GetComponent<MeshRenderer>();
+
         BaseColor = MeshRenderer.material.color;
         Color hoverColor = BaseColor;
         hoverColor.a = 0.4f;
         HoverColor = hoverColor;
-        Debug.Log("BaseColor: " + BaseColor);
+
+        updateFunction = NoOpBehaviour;
+        onMouseOverFunction = NoOpBehaviour;
+        onMouseExitFunction = NoOpBehaviour;
     }
 
     // Update is called once per frame
     void OnMouseOver()
+    {
+        onMouseOverFunction();
+    }
+
+    void OnMouseExit()
+    {
+        onMouseExitFunction();
+    }
+
+    void Update()
+    {
+        updateFunction();
+    }
+
+    public void OnStateChange(object sender, EventArgs args)
+    {
+        MainScript ms = sender as MainScript;
+        switch (ms.State)
+        {
+            case EState.InGame:
+                updateFunction = InGameUpdateBehaviouor;
+                onMouseOverFunction = InGameOnMouseOverBehaviour;
+                onMouseExitFunction = InGameOnMouseExitBehaviour;
+                break;
+            default:
+                break;
+        }
+    }
+
+    void NoOpBehaviour() { }
+
+    void InGameOnMouseOverBehaviour()
     {
         MeshRenderer.material.color = HoverColor;
         if (!Filled)
@@ -44,12 +83,12 @@ public class CubeletScript : MonoBehaviour
         }
     }
 
-    private void OnMouseExit()
+    void InGameOnMouseExitBehaviour()
     {
         MeshRenderer.material.color = BaseColor;
     }
 
-    private void Update()
+    void InGameUpdateBehaviouor()
     {
         if (Filled && Input.GetKeyDown(KeyCode.R))
         {
