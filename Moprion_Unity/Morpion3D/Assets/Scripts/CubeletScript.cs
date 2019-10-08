@@ -1,80 +1,99 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 
 public class CubeletScript : MonoBehaviour
 {
-    public enum ECubeletState
-    {
-        InGame,
-        NotInGame,
-    }
-
     public Color BaseColor;
     public Color HoverColor;
     public GameObject FillingItemLeftClick;
     public GameObject FillingItemRightClick;
-    public MeshRenderer MeshRenderer { get; private set; }
+    private MeshRenderer MeshRenderer;
     public GameObject CurrentFillingObject { get; private set; }
     public bool Filled { get; private set; }
 
-    public ECubeletState CubeletState { get; private set; }
+    private Action updateFunction;
+    private Action onMouseOverFunction;
+    private Action onMouseExitFunction;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
         Filled = false;
         CurrentFillingObject = null;
+
         MeshRenderer = GetComponent<MeshRenderer>();
+
         BaseColor = MeshRenderer.material.color;
         Color hoverColor = BaseColor;
         hoverColor.a = 0.4f;
         HoverColor = hoverColor;
 
-        CubeletState = ECubeletState.NotInGame;
+        updateFunction = NoOpBehaviour;
+        onMouseOverFunction = NoOpBehaviour;
+        onMouseExitFunction = NoOpBehaviour;
     }
 
     // Update is called once per frame
     void OnMouseOver()
     {
-        if (CubeletState == ECubeletState.InGame)
+        onMouseOverFunction();
+    }
+
+    void OnMouseExit()
+    {
+        onMouseExitFunction();
+    }
+
+    void Update()
+    {
+        updateFunction();
+    }
+
+    public void OnStateChange(object sender, EventArgs args)
+    {
+        MainScript ms = sender as MainScript;
+        switch (ms.State)
         {
-            MeshRenderer.material.color = HoverColor;
-            if (!Filled)
+            case EState.InGame:
+                updateFunction = InGameUpdateBehaviouor;
+                onMouseOverFunction = InGameOnMouseOverBehaviour;
+                onMouseExitFunction = InGameOnMouseExitBehaviour;
+                break;
+            default:
+                break;
+        }
+    }
+
+    void NoOpBehaviour() { }
+
+    void InGameOnMouseOverBehaviour()
+    {
+        MeshRenderer.material.color = HoverColor;
+        if (!Filled)
+        {
+            if (Input.GetMouseButtonDown(0))
             {
-                if (Input.GetMouseButtonDown(0))
-                {
-                    CurrentFillingObject = Instantiate(FillingItemLeftClick, transform);
-                    Filled = true;
-                }
-                else if (Input.GetMouseButtonDown(1))
-                {
-                    CurrentFillingObject = Instantiate(FillingItemRightClick, transform);
-                    Filled = true;
-                }
+                CurrentFillingObject = Instantiate(FillingItemLeftClick, transform);
+                Filled = true;
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                CurrentFillingObject = Instantiate(FillingItemRightClick, transform);
+                Filled = true;
             }
         }
     }
 
-    private void OnMouseExit()
+    void InGameOnMouseExitBehaviour()
     {
-        if (CubeletState == ECubeletState.InGame)
-        {
-            MeshRenderer.material.color = BaseColor;
-        }
+        MeshRenderer.material.color = BaseColor;
     }
 
-    private void Update()
+    void InGameUpdateBehaviouor()
     {
-        if (CubeletState == ECubeletState.InGame && Filled && Input.GetKeyDown(KeyCode.R))
+        if (Filled && Input.GetKeyDown(KeyCode.R))
         {
             Destroy(CurrentFillingObject);
             Filled = false;
         }
-    }
-
-    public void UpdateCubeletState(ECubeletState cubeletState)
-    {
-        CubeletState = cubeletState;
     }
 }

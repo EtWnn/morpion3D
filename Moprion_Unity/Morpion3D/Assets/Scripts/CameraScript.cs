@@ -4,35 +4,27 @@ using UnityEngine;
 
 public class CameraScript : MonoBehaviour
 {
-    const float LERP_END_DIST = 10e-2f;
-
-    public enum ECameraState
-    {
-        ToMenu,
-        ReadyMenu,
-        InMenu,
-        ToGame,
-        ReadyGame,
-        InGame,
-    }
-
     static public Vector3 menuPosition = new Vector3(0, 0, -5f);
-    static public Vector3 gamePosition = new Vector3(0, 0, 0);
+    static public Vector3 gamePosition = new Vector3(0, 0, -0f);
 
     public float CameraTransitionTime;
     public float RotationSpeed;
-    public ECameraState CamState { get; private set; }
 
     private Action UpdateFunction;
 
+    public event EventHandler ReadyGame;
+    public event EventHandler ReadyMenu;
+
+    private void Awake()
+    {
+        RotationSpeed = 1;
+        CameraTransitionTime = 2f;
+        UpdateFunction = NoOpBehaviour;
+        transform.position = menuPosition;
+    }
+
     void Start()
     {
-        transform.position = menuPosition;
-        Debug.Log(transform.position);
-        RotationSpeed = 1;
-        CameraTransitionTime = 5f;
-        CamState = ECameraState.InMenu;
-        UpdateFunction = NoOpBehaviour;
     }
 
     void Update()
@@ -40,29 +32,67 @@ public class CameraScript : MonoBehaviour
         UpdateFunction();
     }
 
+    public void OnStateChange(object sender, EventArgs args)
+    {
+        MainScript ms = sender as MainScript;
+        switch (ms.State)
+        {
+            case EState.ToMenu:
+                UpdateFunction = ToMenuBehaviour;
+                break;
+            case EState.ToGame:
+                UpdateFunction = ToGameBehaviour;
+                break;
+            case EState.InGame:
+                UpdateFunction = InGameBehaviour;
+                break;
+            default:
+                UpdateFunction = NoOpBehaviour;
+                break;
+        }
+    }
+
     private void ToGameBehaviour()
     {
-        var itPosition = LerpMove(transform.position, gamePosition, 8);
-        if(itPosition.MoveNext())
-            transform.position = (Vector3)itPosition.Current;
-        else
+        StartCoroutine("ToGameCoroutine");
+        UpdateFunction = NoOpBehaviour;
+    }
+
+    IEnumerator ToGameCoroutine()
+    {
+        var itPosition = Utils.LerpMove(transform.position, gamePosition, CameraTransitionTime, true);
+        
+        while (itPosition.MoveNext())
         {
-            Debug.Log("Camera finished ToGame!");
-            UpdateCameraState(ECameraState.ReadyGame);
+            transform.position = (Vector3)itPosition.Current;
+            yield return null;
         }
+        OnReadyGame();
+        yield break;
     }
 
     private void ToMenuBehaviour()
     {
-        transform.position = Vector3.Lerp(transform.position, menuPosition, CameraTransitionTime);
-        if (Vector3.Distance(transform.position, menuPosition) < LERP_END_DIST)
+        var itPosition = Utils.LerpMoveAndRotate(
+            transform.position, transform.rotation,
+            menuPosition, Quaternion.identity,
+            CameraTransitionTime, true);
+
+        if (itPosition.MoveNext())
         {
-            transform.position = menuPosition;
-            UpdateCameraState(ECameraState.ReadyMenu);
+            var pair = (Tuple<Vector3, Quaternion>)itPosition.Current;
+            transform.position = pair.Item1;
+            transform.rotation = pair.Item2;
+        }
+        else
+        {
+            Debug.Log("Camera finished ToMenu!");
+            OnReadyMenu();
+            UpdateFunction = NoOpBehaviour;
         }
     }
 
-    private void InGameCameraBehaviour()
+    private void InGameBehaviour()
     {
         if (Input.GetMouseButton(0))
         {
@@ -71,7 +101,6 @@ public class CameraScript : MonoBehaviour
             var currentEuler = transform.rotation.eulerAngles;
             var newEuler = currentEuler + eulerDelta;
             newEuler.z = 0;
-            Debug.Log(newEuler);
             transform.rotation = Quaternion.Euler(newEuler);
         }
     }
@@ -80,39 +109,15 @@ public class CameraScript : MonoBehaviour
     {
     }
 
-    public void UpdateCameraState(ECameraState cameraState)
+    private void OnReadyGame()
     {
-        switch (cameraState)
-        {
-            case ECameraState.ToMenu:
-                break;
-            case ECameraState.ToGame:
-                UpdateFunction = ToGameBehaviour;
-                break;
-            case ECameraState.InGame:
-                if (CamState != ECameraState.ReadyGame)
-                    throw new Exception("Trying to set InGame mode while camera not in ReadyGame mode");
-                UpdateFunction = InGameCameraBehaviour;
-                break;
-            default:
-                UpdateFunction = NoOpBehaviour;
-                break;
-        }
-        CamState = cameraState;
+        if (ReadyGame != null)
+            ReadyGame(this, EventArgs.Empty);
     }
 
-    IEnumerator LerpMove(Vector3 initPos, Vector3 targetPos, float duration, bool smoothed)
+    private void OnReadyMenu()
     {
-
-        Func<float, float> F = (float t) => t;
-        if (smoothed)
-            F = (float t) => -  
-        float t = 0;
-        float dt = Time.timeScale / duration;
-        while ((t += dt) < 1)
-        {
-            yield return Vector3.Lerp(initPos, targetPos, t);
-        }
-        yield break;
+        if (ReadyMenu != null)
+            ReadyMenu(this, EventArgs.Empty);
     }
 }

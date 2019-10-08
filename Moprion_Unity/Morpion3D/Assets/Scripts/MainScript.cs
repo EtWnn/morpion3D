@@ -1,87 +1,101 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum EState
+{
+    Default,
+    InMainMenu,
+    InOptionMenu,
+    ToMenu,
+    InGame,
+    InGameMenu,
+    ToGame,
+}
 
 public class MainScript : MonoBehaviour
 {
-    public enum EState
-    {
-        ToMenu,
-        InMainMenu,
-        InOptionMenu,
-        ToGame,
-        InGame,
-    }
-
+    private EState _state;
     public EState State 
     { 
-        get => State;
-        private set { StateChange(this, EventArgs.Empty); State = value; }
+        get => _state;
+        private set
+        { 
+            Debug.Log($"State change: {_state} to {value}");
+            _state = value;
+            OnStateChange();
+        }
     }
 
     public event EventHandler StateChange;
     
-    private Action updateFunction;
-
     public GameObject CameraHandlerPrefab;
     private CameraScript cameraScript;
 
     public GameObject MainMenuPrefab;
-    // private MainMenuScript mainMenuScript;
+    private MainMenuScript mainMenuScript;
 
     public GameObject GridPrefab;
     private GridScript gridScript;
 
+    public GameObject OnlineStatusPrefab;
+    private OnlineStatusScript onlineStatusScript;
+
+    private Dictionary<object, bool> gameReadyEventsState;
+
+    private void Awake()
+    {
+        State = EState.Default;
+        CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
+        GridPrefab = Instantiate(GridPrefab, transform);
+        MainMenuPrefab = Instantiate(MainMenuPrefab, transform);
+        OnlineStatusPrefab = Instantiate(OnlineStatusPrefab, transform);
+    }
 
     // Start is called before the first frame update
     void Start()
     {
-        CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         cameraScript = CameraHandlerPrefab.GetComponent<CameraScript>();
-        
-        MainMenuPrefab = Instantiate(MainMenuPrefab, transform);
+        StateChange += cameraScript.OnStateChange;
+        cameraScript.ReadyGame += OnGameReadyEvents;
 
-        GridPrefab = Instantiate(GridPrefab, transform);
         gridScript = GridPrefab.GetComponent<GridScript>();
+        StateChange += gridScript.OnStateChange;
+        gridScript.ReadyGame += OnGameReadyEvents;
+
+        mainMenuScript = MainMenuPrefab.GetComponent<MainMenuScript>();
+        StateChange += mainMenuScript.OnStateChange;
+
+        onlineStatusScript = OnlineStatusPrefab.GetComponent<OnlineStatusScript>();
+
+        mainMenuScript.StartButton.onClick.AddListener(StartGame);
+        mainMenuScript.QuitButton.onClick.AddListener(() => Application.Quit(0));
+
+        gameReadyEventsState = new Dictionary<object, bool>();
+        gameReadyEventsState.Add(gridScript, false);
+        gameReadyEventsState.Add(cameraScript, false);
 
         State = EState.InMainMenu;
-        updateFunction = NoOpBehaviour;
     }
 
-    void Update()
+    void StartGame()
     {
-        updateFunction();
-    }
-
-    public void NoOpBehaviour() { }
-
-    public void ToGameBehaviour()
-    {
-        if (IsReadyGame())
-        {
-            cameraScript.UpdateCameraState(CameraScript.ECameraState.InGame);
-            gridScript.UpdateGridState(GridScript.EState.InGame);
-            State = EState.InGame;
-            updateFunction = NoOpBehaviour;
-        }
-    }
-
-    public void BeginToGame()
-    {
-        Debug.Log("BeginToGame function");
-        cameraScript.UpdateCameraState(CameraScript.ECameraState.ToGame);
-        gridScript.UpdateGridState(GridScript.EState.ToGame);
-        MainMenuPrefab.SetActive(false);
         State = EState.ToGame;
-        updateFunction = ToGameBehaviour;
     }
 
-    public bool IsReadyGame()
+    void OnStateChange()
     {
-        return 
-            cameraScript.CamState == CameraScript.ECameraState.ReadyGame
-            && gridScript.GridState == GridScript.EState.ReadyGame;
+        if (StateChange != null)
+            StateChange(this, EventArgs.Empty);
+    }
+
+    void OnGameReadyEvents(object sender, EventArgs args)
+    {
+        gameReadyEventsState[sender] = true;
+
+        if (!gameReadyEventsState.ContainsValue(false))
+            State = EState.InGame;
     }
 }
 
