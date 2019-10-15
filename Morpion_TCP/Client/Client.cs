@@ -11,13 +11,14 @@ using Client.Models;
 
 namespace Client
 {
-    class Client
+    public class Client
     {
         private static Int32 port = 13000;
         private static IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
         private static Mutex mutex = new Mutex();
         public static Dictionary<int, User> connected_users = new Dictionary<int, User>();
+        public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
 
         static void DisplayOtherUser()
         {

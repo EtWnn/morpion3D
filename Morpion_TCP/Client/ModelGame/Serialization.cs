@@ -5,7 +5,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace Serveur.ModelGame
+namespace Client.ModelGame
 {
     static class Serialization
     {

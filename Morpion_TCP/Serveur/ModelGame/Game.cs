@@ -42,19 +42,46 @@ namespace Serveur.ModelGame
         }
 
         private const int GAMEBOARDSIZE = 3; // Dimension du plateau
-        private List<Vector3> PlayedPositionsPlayer1 { get; set; } = new List<Vector3>();
-        private List<Vector3> PlayedPositionsPlayer2 { get; set; } = new List<Vector3>();
+        private List<Vector3> PlayedPositionsPlayer1 = new List<Vector3>();
+        private List<Vector3> PlayedPositionsPlayer2 = new List<Vector3>();
+        private int IdPlayer1;
+        private int IdPlayer2;
 
-        public Game()
+        public Game( int idClient1, int idClient2 )
         {
+            Random rnd = new Random();
             GameBoardMatrix = GameBoard.gameBoardGeneration(GAMEBOARDSIZE);
             Mode = GameMode.Player1;
+            if (rnd.Next(0, 2) < 1)
+            {
+                IdPlayer1 = idClient1;
+                IdPlayer2 = idClient2;
+            }
+            else
+            {
+                IdPlayer1 = idClient2;
+                IdPlayer2 = idClient1;
+            }
+            
+        }
+
+        private bool CanPlay(int idCLient)
+        {
+            if (idCLient == IdPlayer1 && Mode == GameMode.Player1)
+            {
+                return true;
+            }
+            else if (idCLient == IdPlayer2 && Mode == GameMode.Player2)
+            {
+                return true;
+            }
+            return false;
         }
 
         //Methode pour mettre a jour le morpion en fonction de l'action d un joueur
-        public void Play(Vector3 playedPosition)
+        public void Play(Vector3 playedPosition, int idClient)
         {
-            if (GameBoardMatrix[(int)playedPosition.X, (int)playedPosition.Y, (int)playedPosition.Z] == (int)Cell.Empty)
+            if (GameBoardMatrix[(int)playedPosition.X, (int)playedPosition.Y, (int)playedPosition.Z] == (int)Cell.Empty && CanPlay(idClient))
             {
                 List<Vector3> WinningPositionsList = new List<Vector3>();
                 WinningPositionsList = WinningCombinaison(playedPosition);

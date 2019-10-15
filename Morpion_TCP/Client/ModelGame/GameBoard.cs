@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Serveur.ModelGame
+namespace Client.ModelGame
 {
     static class GameBoard
     {
