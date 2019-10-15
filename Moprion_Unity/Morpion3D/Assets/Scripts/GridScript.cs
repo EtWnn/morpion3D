@@ -39,9 +39,6 @@ public class GridScript : MonoBehaviour
         MainScript ms = sender as MainScript;
         switch (ms.State)
         {
-            case EState.Default:
-                updateFunction = NoOpBehaviour;
-                break;
             case EState.ToGame:
                 updateFunction = ToGameBehaviour;
                 break;
@@ -51,14 +48,11 @@ public class GridScript : MonoBehaviour
             case EState.InMainMenu:
                 updateFunction = NotInGameBehaviour;
                 break;
-            case EState.InOptionMenu:
+            case EState.InOptionsMenu:
                 updateFunction = NotInGameBehaviour;
                 break;
             case EState.ToMenu:
                 updateFunction = NotInGameBehaviour;
-                break;
-            case EState.InGameMenu:
-                updateFunction = NoOpBehaviour;
                 break;
             default:
                 updateFunction = NoOpBehaviour;

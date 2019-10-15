@@ -1,6 +1,3 @@
-Clickable buttons in Menu with no associated actions
-Cannot start game
-Can left / right click on the rotating background cube to add cross / tore
-Press R to reset tores / crosses
+If UI texts are invisible go to Window > TextMeshPro > Import Essential Ressources and import all the files.
 
 Made with Unity 2018.3.7f1

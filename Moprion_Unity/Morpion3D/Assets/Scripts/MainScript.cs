@@ -7,11 +7,12 @@ public enum EState
 {
     Default,
     InMainMenu,
-    InOptionMenu,
+    InOptionsMenu,
     ToMenu,
     InGame,
     InGameMenu,
     ToGame,
+    SearchingOpponent,
 }
 
 public class MainScript : MonoBehaviour
@@ -33,14 +34,12 @@ public class MainScript : MonoBehaviour
     public GameObject CameraHandlerPrefab;
     private CameraScript cameraScript;
 
-    public GameObject MainMenuPrefab;
-    private MainMenuScript mainMenuScript;
-
     public GameObject GridPrefab;
     private GridScript gridScript;
 
-    public GameObject OnlineStatusPrefab;
-    private OnlineStatusScript onlineStatusScript;
+    public GameObject UIControllerPrefab;
+    private UIControllerScript uiControllerScript;
+
 
     private Dictionary<object, bool> gameReadyEventsState;
 
@@ -49,28 +48,21 @@ public class MainScript : MonoBehaviour
         State = EState.Default;
         CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         GridPrefab = Instantiate(GridPrefab, transform);
-        MainMenuPrefab = Instantiate(MainMenuPrefab, transform);
-        OnlineStatusPrefab = Instantiate(OnlineStatusPrefab, transform);
+        UIControllerPrefab = Instantiate(UIControllerPrefab, transform);
     }
 
     // Start is called before the first frame update
     void Start()
     {
         cameraScript = CameraHandlerPrefab.GetComponent<CameraScript>();
-        StateChange += cameraScript.OnStateChange;
-        cameraScript.ReadyGame += OnGameReadyEvents;
-
+        uiControllerScript = UIControllerPrefab.GetComponent<UIControllerScript>();
         gridScript = GridPrefab.GetComponent<GridScript>();
+
+        StateChange += cameraScript.OnStateChange;
         StateChange += gridScript.OnStateChange;
+
+        cameraScript.ReadyGame += OnGameReadyEvents;
         gridScript.ReadyGame += OnGameReadyEvents;
-
-        mainMenuScript = MainMenuPrefab.GetComponent<MainMenuScript>();
-        StateChange += mainMenuScript.OnStateChange;
-
-        onlineStatusScript = OnlineStatusPrefab.GetComponent<OnlineStatusScript>();
-
-        mainMenuScript.StartButton.onClick.AddListener(StartGame);
-        mainMenuScript.QuitButton.onClick.AddListener(() => Application.Quit(0));
 
         gameReadyEventsState = new Dictionary<object, bool>();
         gameReadyEventsState.Add(gridScript, false);

@@ -24,8 +24,8 @@ public class OnlineStatusScript : MonoBehaviour
         OfflineText = "Offline";
         OnlineText = "Online";
 
-        image = transform.Find("Canvas/Panel/Indicator/Background").GetComponent<Image>();
-        text = transform.Find("Canvas/Panel/Indicator/Text (TMP)").GetComponent<TextMeshProUGUI>();
+        image = transform.Find("Background").GetComponent<Image>();
+        text = transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>();
 
         image.color = OfflineColor;
         text.text = OfflineText;
@@ -43,17 +43,22 @@ public class OnlineStatusScript : MonoBehaviour
         //    StartCoroutine("Blink");
     }
 
-    //IEnumerator Blink()
-    //{
-    //    Debug.Log("Blink started");
+    IEnumerator Blink()
+    {
+        Debug.Log("Blink started");
 
-    //    float period = 0.2f;
-    //    bool alt = false;
-    //    while(true)
-    //    {
-    //        SetOnlineStatus(alt);
-    //        alt = !alt;
-    //        yield return new WaitForSeconds(period);
-    //    }
-    //}
+        float period = 0.2f;
+        bool alt = false;
+        while (true)
+        {
+            SetOnlineStatus(alt);
+            alt = !alt;
+            yield return new WaitForSeconds(period);
+        }
+    }
+
+    public void SetActive(bool value)
+    {
+        gameObject.SetActive(value);
+    }
 }

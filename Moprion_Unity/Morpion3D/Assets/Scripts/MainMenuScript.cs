@@ -10,22 +10,19 @@ public class MainMenuScript : MonoBehaviour
 
     private void Awake()
     {
-        StartButton = transform.Find("Canvas/Panel/Start TMP Button").GetComponent<Button>();
-        OptionsButton = transform.Find("Canvas/Panel/Options TMP Button").GetComponent<Button>();
-        QuitButton = transform.Find("Canvas/Panel/Quit TMP Button").GetComponent<Button>();
+        StartButton = transform.Find("Start TMP Button").GetComponent<Button>();
+        OptionsButton = transform.Find("Options TMP Button").GetComponent<Button>();
+        QuitButton = transform.Find("Quit TMP Button").GetComponent<Button>();
     }
 
-    public void OnStateChange(object sender, EventArgs args)
+    public void SetActive(bool value)
     {
-        MainScript ms = sender as MainScript;
-        switch (ms.State)
-        {
-            case EState.InMainMenu:
-                gameObject.SetActive(true);
-                break;
-            default:
-                gameObject.SetActive(false);
-                break;
-        }
+        gameObject.SetActive(value);
+    }
+
+    public void OnMenuStateChange(object sender, EventArgs e)
+    {
+        var ui = sender as UIControllerScript;
+        SetActive(ui && ui.State == UIControllerScript.EStateUI.InMainMenu);
     }
 }

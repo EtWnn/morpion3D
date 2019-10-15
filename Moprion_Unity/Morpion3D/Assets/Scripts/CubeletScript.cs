@@ -59,6 +59,9 @@ public class CubeletScript : MonoBehaviour
                 onMouseExitFunction = InGameOnMouseExitBehaviour;
                 break;
             default:
+                updateFunction = NoOpBehaviour;
+                onMouseOverFunction = NoOpBehaviour;
+                onMouseExitFunction = NoOpBehaviour;
                 break;
         }
     }
