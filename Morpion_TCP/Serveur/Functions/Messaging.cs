@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Serveur.Functions
+namespace Serveur.Functions.Messaging
 {
     public enum NomCommande
     {
@@ -71,6 +71,10 @@ namespace Serveur.Functions
             return response;
         }
 
+        public static byte[] ReceiveNewPosition(byte[] bytes, UserHandler userHandler)
+        {
+
+        }
         public static void SendMessage(NetworkStream stream, string message)
         {
             //command in bytes
