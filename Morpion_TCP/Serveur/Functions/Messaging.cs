@@ -3,17 +3,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Serveur.ModelGame;
 
-namespace Serveur.Functions.Messaging
+namespace Serveur.Functions
 {
     public enum NomCommande
     {
         MSG,
         USN,
-        OUS
-
+        OUS,
+        NPP,
+        DGB
     }
 
     public class Messaging
@@ -71,10 +74,23 @@ namespace Serveur.Functions.Messaging
             return response;
         }
 
-        public static byte[] ReceiveNewPosition(byte[] bytes, UserHandler userHandler)
+        public static byte[] ReceivePositionPlayed(byte[] bytes, UserHandler userHandler)
         {
-
+            Vector3 position = Serialization.DeserializationPositionPlayed(bytes);
+            userHandler.Game.Play(position, userHandler.Id);
+            return new byte[0];
         }
+
+        public static byte[] SendGameBoard(byte[] bytes, UserHandler userHandler)
+        {
+            byte[] response = Serialization.SerializationMatchStatus(userHandler.Game);
+            if (!(userHandler.Game.Mode == GameMode.Player1 || userHandler.Game.Mode == GameMode.Player2))
+            {
+                userHandler.Game = null;
+            }
+            return response;
+        }
+
         public static void SendMessage(NetworkStream stream, string message)
         {
             //command in bytes

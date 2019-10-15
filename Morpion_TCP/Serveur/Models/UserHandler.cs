@@ -33,18 +33,22 @@ namespace Serveur.Models
             methods[NomCommande.MSG] = Messaging.RecieveMessage;
             methods[NomCommande.USN] = Messaging.RecieveUserName;
             methods[NomCommande.OUS] = Messaging.SendOtherUsers;
+            methods[NomCommande.NPP] = Messaging.ReceivePositionPlayed;
+            methods[NomCommande.DGB] = Messaging.SendGameBoard;
         }
 
 
         public int Id { get; private set; }
         public string UserName { get; set; }
         public TcpClient clientSocket { get; set; }
+        public ModelGame.Game Game { get; set; } 
 
         public UserHandler(TcpClient inClientSocket)
         {
             this.clientSocket = inClientSocket;
             this.UserName = "default_" + next_id.ToString();
             this.Id = next_id;
+            this.Game = null;
 
             mutex.WaitOne();
             userHandlers[this.Id] = this; //on stocke le nouvel utilisateur dans le dictionnaire static users

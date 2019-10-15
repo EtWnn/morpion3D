@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.Numerics;
+using Client.ModelGame;
 
 namespace Client.Functions
 {
@@ -12,12 +14,17 @@ namespace Client.Functions
     {
         MSG,
         USN,
-        OUS
+        OUS,
+        MRQ,
+        RQS,
+        NPP,
+        DGB
 
     }
 
     public class Messaging
     {
+        // General commands
         public static void RecieveMessage(byte[] bytes)
         {
             string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
@@ -112,5 +119,97 @@ namespace Client.Functions
 
         }
 
+        // Game Requests commands
+
+        public static void RequestMatch(NetworkStream stream, int id)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(NomCommande.MRQ.ToString());
+            // id in bytes
+            var id_bytes = BitConverter.GetBytes((Int16)id);
+            //length of the id in bytes
+            var args_length = BitConverter.GetBytes((Int16)id_bytes.Length);
+
+
+            byte[] msg = new byte[cmd.Length + args_length.Length + id_bytes.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            args_length.CopyTo(msg, cmd.Length);
+            //content
+            id_bytes.CopyTo(msg, cmd.Length + args_length.Length);
+
+
+            //envoie de la requête
+            stream.Write(msg, 0, msg.Length);
+        }
+
+        public static void RecieveGameRequestStatus(byte[] bytes)
+        {
+            //lancer la partie ou retour au menu
+        }
+
+        public static void RecieveGameRequest(byte[] bytes, Client client)
+        {
+            int byte_compt = 0;
+            int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
+            int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
+            string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
+
+            client.gameRequestsRecieved[user_id] = new User(user_id, userName);
+        }
+
+        // ADD new command for response to game request (with updating of the dictionary)
+
+        // In-game commands
+        public static void SendPositionPlayer(NetworkStream stream, Vector3 position)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(NomCommande.NPP.ToString());
+            byte[] positionBytes = Serialization.SerializationPositionPlayed(position);
+            //length of the content in bytes
+            var args_length = BitConverter.GetBytes((Int16)positionBytes.Length);
+
+
+
+            byte[] msg = new byte[cmd.Length + args_length.Length + positionBytes.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            args_length.CopyTo(msg, cmd.Length);
+            //position
+            positionBytes.CopyTo(msg, cmd.Length + args_length.Length);
+
+            //envoie de la requête
+            stream.Write(msg, 0, msg.Length);
+        }
+
+        public static void AskGameBoard(NetworkStream stream)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(NomCommande.DGB.ToString());
+            //length of the content in bytes
+            var args_length = BitConverter.GetBytes((Int16)0);
+
+
+
+            byte[] msg = new byte[cmd.Length + args_length.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            args_length.CopyTo(msg, cmd.Length);
+
+            //envoie de la requête
+            stream.Write(msg, 0, msg.Length);
+
+        }
+
+        public static Game RecieveGameBoard(byte[] bytes)
+        {
+            return Serialization.DeserializationMatchStatus(bytes);
+        }
     }
 }
