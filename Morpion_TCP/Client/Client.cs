@@ -19,7 +19,9 @@ namespace Client
         private Mutex mutex = new Mutex();
         public Dictionary<int, User> connected_users = new Dictionary<int, User>();
 
+
         public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
+        public User Opponent = null;
 
         void DisplayOtherUser()
         {

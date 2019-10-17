@@ -18,12 +18,41 @@ namespace Client.Functions
         MRQ,
         RQS,
         NPP,
-        DGB
+        DGB,
+        GRR
 
     }
 
     public class Messaging
     {
+        //Serialization
+        private static byte[] encodingMessage(string message, NomCommande nomCommande)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
+            //length of the content in bytes
+            var message_length = BitConverter.GetBytes((Int16)message.Length);
+            //content in bytes
+            var message_bytes = Encoding.UTF8.GetBytes(message);
+
+            byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            message_length.CopyTo(msg, cmd.Length);
+            //content
+            message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
+
+            //renvoie le tableau de bytes
+            return msg;
+        }
+        private static string serializationResponseOpponent(int idOpponent, bool response)
+        {
+            string message = idOpponent.ToString() + response.ToString();
+            return message;
+        }
+
         // General commands
         public static void RecieveMessage(byte[] bytes)
         {
@@ -161,6 +190,27 @@ namespace Client.Functions
         }
 
         // ADD new command for response to game request (with updating of the dictionary)
+        public static void SendGameRequestResponse(NetworkStream stream, Client client, int idOpponent, bool response)
+        {
+            if (response)
+            {
+                byte[] bytes = encodingMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
+                stream.Write(bytes, 0, bytes.Length);
+                client.Opponent = Client.connected_users[idOpponent];
+                foreach (var opponent in client.gameRequestsRecieved)
+                {
+                    bytes = encodingMessage(serializationResponseOpponent(opponent.Key, !response), NomCommande.GRR);
+                    stream.Write(bytes, 0, bytes.Length);
+                    client.gameRequestsRecieved.Remove(opponent.Key);
+                }
+            }
+            else
+            {
+                byte[] bytes = encodingMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
+                stream.Write(bytes, 0, bytes.Length);
+                client.gameRequestsRecieved.Remove(idOpponent);
+            }
+        }
 
         // In-game commands
         public static void SendPositionPlayer(NetworkStream stream, Vector3 position)
