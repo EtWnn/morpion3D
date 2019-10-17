@@ -26,7 +26,25 @@ namespace Client.Functions
     public class Messaging
     {
         //Serialization
-        private static byte[] encodingMessage(string message, NomCommande nomCommande)
+        
+        private static byte[] serializationMessage(NomCommande nomCommande)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
+            //length of the content in bytes
+            var message_length = BitConverter.GetBytes((Int16)0);
+
+            byte[] msg = new byte[cmd.Length + message_length.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            message_length.CopyTo(msg, cmd.Length);
+
+            //renvoie le tableau de bytes
+            return msg;
+        }
+        private static byte[] serializationMessage(string message, NomCommande nomCommande)
         {
             //command in bytes
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
@@ -34,6 +52,25 @@ namespace Client.Functions
             var message_length = BitConverter.GetBytes((Int16)message.Length);
             //content in bytes
             var message_bytes = Encoding.UTF8.GetBytes(message);
+
+            byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            message_length.CopyTo(msg, cmd.Length);
+            //content
+            message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
+
+            //renvoie le tableau de bytes
+            return msg;
+        }
+        private static byte[] serializationMessage(byte[] message_bytes, NomCommande nomCommande)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
+            //length of the content in bytes
+            var message_length = BitConverter.GetBytes((Int16)message_bytes.Length);
 
             byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
 
@@ -62,23 +99,8 @@ namespace Client.Functions
 
         public static void AskOtherUsers(NetworkStream stream)
         {
-            //command in bytes
-            var cmd = Encoding.UTF8.GetBytes(NomCommande.OUS.ToString());
-            //length of the content in bytes
-            var args_length = BitConverter.GetBytes((Int16)0); 
-            
-
-
-            byte[] msg = new byte[cmd.Length + args_length.Length];
-
-            //command
-            cmd.CopyTo(msg, 0);
-            //length to follow
-            args_length.CopyTo(msg, cmd.Length);
-
-            //envoie de la requête
+            byte[] msg = serializationMessage(NomCommande.OUS);
             stream.Write(msg, 0, msg.Length);
-
         }
 
         public static void RecieveOtherUsers(byte[] bytes, Client client)
@@ -100,77 +122,21 @@ namespace Client.Functions
 
         public static void SendMessage(NetworkStream stream, string message)
         {
-            //command in bytes
-            var cmd = Encoding.UTF8.GetBytes(NomCommande.MSG.ToString());
-            //length of the content in bytes
-            var message_length = BitConverter.GetBytes((Int16)message.Length);
-            //content in bytes
-            var message_bytes = Encoding.UTF8.GetBytes(message);
-
-
-            byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
-
-            //command
-            cmd.CopyTo(msg, 0);
-            //length to follow
-            message_length.CopyTo(msg, cmd.Length);
-            //content
-            message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
-
-
-            //envoie de la requête
+            byte[] msg = serializationMessage(message, NomCommande.MSG);
             stream.Write(msg, 0, msg.Length);
-
         }
 
         public static void SendUserName(NetworkStream stream, string userName)
         {
-            //command in bytes
-            var cmd = Encoding.UTF8.GetBytes(NomCommande.USN.ToString());
-            //length of the content in bytes
-            var message_length = BitConverter.GetBytes((Int16)userName.Length);
-            //content in bytes
-            var message_bytes = Encoding.UTF8.GetBytes(userName);
-
-
-            byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
-
-            //command
-            cmd.CopyTo(msg, 0);
-            //length to follow
-            message_length.CopyTo(msg, cmd.Length);
-            //content
-            message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
-
-
-            //envoie de la requête
+            byte[] msg = serializationMessage(userName, NomCommande.USN);
             stream.Write(msg, 0, msg.Length);
-
         }
 
         // Game Requests commands
 
         public static void RequestMatch(NetworkStream stream, int id)
         {
-            //command in bytes
-            var cmd = Encoding.UTF8.GetBytes(NomCommande.MRQ.ToString());
-            // id in bytes
-            var id_bytes = BitConverter.GetBytes((Int16)id);
-            //length of the id in bytes
-            var args_length = BitConverter.GetBytes((Int16)id_bytes.Length);
-
-
-            byte[] msg = new byte[cmd.Length + args_length.Length + id_bytes.Length];
-
-            //command
-            cmd.CopyTo(msg, 0);
-            //length to follow
-            args_length.CopyTo(msg, cmd.Length);
-            //content
-            id_bytes.CopyTo(msg, cmd.Length + args_length.Length);
-
-
-            //envoie de la requête
+            byte[] msg = serializationMessage(id.ToString(), NomCommande.MRQ);
             stream.Write(msg, 0, msg.Length);
         }
 
@@ -194,19 +160,19 @@ namespace Client.Functions
         {
             if (response)
             {
-                byte[] bytes = encodingMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
+                byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
                 stream.Write(bytes, 0, bytes.Length);
-                client.Opponent = Client.connected_users[idOpponent];
+                client.Opponent = client.connected_users[idOpponent];
                 foreach (var opponent in client.gameRequestsRecieved)
                 {
-                    bytes = encodingMessage(serializationResponseOpponent(opponent.Key, !response), NomCommande.GRR);
+                    bytes = serializationMessage(serializationResponseOpponent(opponent.Key, !response), NomCommande.GRR);
                     stream.Write(bytes, 0, bytes.Length);
                     client.gameRequestsRecieved.Remove(opponent.Key);
                 }
             }
             else
             {
-                byte[] bytes = encodingMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
+                byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
                 stream.Write(bytes, 0, bytes.Length);
                 client.gameRequestsRecieved.Remove(idOpponent);
             }
@@ -215,46 +181,15 @@ namespace Client.Functions
         // In-game commands
         public static void SendPositionPlayer(NetworkStream stream, Vector3 position)
         {
-            //command in bytes
-            var cmd = Encoding.UTF8.GetBytes(NomCommande.NPP.ToString());
             byte[] positionBytes = Serialization.SerializationPositionPlayed(position);
-            //length of the content in bytes
-            var args_length = BitConverter.GetBytes((Int16)positionBytes.Length);
-
-
-
-            byte[] msg = new byte[cmd.Length + args_length.Length + positionBytes.Length];
-
-            //command
-            cmd.CopyTo(msg, 0);
-            //length to follow
-            args_length.CopyTo(msg, cmd.Length);
-            //position
-            positionBytes.CopyTo(msg, cmd.Length + args_length.Length);
-
-            //envoie de la requête
+            byte[] msg = serializationMessage(positionBytes, NomCommande.NPP);
             stream.Write(msg, 0, msg.Length);
         }
 
         public static void AskGameBoard(NetworkStream stream)
         {
-            //command in bytes
-            var cmd = Encoding.UTF8.GetBytes(NomCommande.DGB.ToString());
-            //length of the content in bytes
-            var args_length = BitConverter.GetBytes((Int16)0);
-
-
-
-            byte[] msg = new byte[cmd.Length + args_length.Length];
-
-            //command
-            cmd.CopyTo(msg, 0);
-            //length to follow
-            args_length.CopyTo(msg, cmd.Length);
-
-            //envoie de la requête
+            byte[] msg = serializationMessage(NomCommande.DGB);
             stream.Write(msg, 0, msg.Length);
-
         }
 
         public static Game RecieveGameBoard(byte[] bytes)
