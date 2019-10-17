@@ -39,7 +39,7 @@ namespace Serveur.Functions
         public static byte[] SendOtherUsers(byte[] bytes, UserHandler userHandler)
         {
             
-            var bytes_users = from e in UserHandler.UsersHandlers.Values
+            var bytes_users = from e in userHandler.UsersHandlers.Values
                         where e.Id != userHandler.Id
                         orderby e.Id, e.UserName
                         select e.ToBytes();
@@ -89,6 +89,13 @@ namespace Serveur.Functions
                 userHandler.Game = null;
             }
             return response;
+        }
+
+        public static byte[] TransferMatchRequest(byte[] bytes, UserHandler userHandler)
+        {
+            int id = BitConverter.ToInt16(bytes, 0);
+
+            return new byte[0];
         }
 
         public static void SendMessage(NetworkStream stream, string message)

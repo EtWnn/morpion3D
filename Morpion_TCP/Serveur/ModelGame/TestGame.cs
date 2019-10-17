@@ -7,11 +7,12 @@ namespace Serveur.ModelGame
     {
         public static void LaunchGame2Players()
         {
-            Game match1 = new Game();
+            Game match1 = new Game(0,1);
             Vector3 position = new Vector3();
             int x = 0;
             int y = 0;
             int z = 0;
+            int player = 0;
             GameBoard.display(match1.GameBoardMatrix);
             while (!match1.EndGame)
             {
@@ -25,7 +26,7 @@ namespace Serveur.ModelGame
                 Console.WriteLine("Quelle est la coordonnee z (0,1 ou 2) de la position que vous voulez jouer ? (la colonne)");
                 z = (int.Parse(Console.ReadLine()));
                 position.Z = z;
-                match1.Play(position);
+                match1.Play(position, player); player = 1 - player;
                 Console.WriteLine("Plateau");
                 GameBoard.display(match1.GameBoardMatrix);
                 Console.WriteLine("Fin du jeu : {0}", match1.EndGame);
@@ -36,7 +37,7 @@ namespace Serveur.ModelGame
         public static void LaunchRandomGameStepByStep()
         {
             Random rnd = new Random();
-            Game match1 = new Game();
+            Game match1 = new Game(-1,-1);
             Vector3 position = new Vector3();
             while (!match1.EndGame)
             {
@@ -45,7 +46,7 @@ namespace Serveur.ModelGame
                 position.Z = rnd.Next(0, 3);
                 Console.WriteLine("\n ----------------------");
                 Console.WriteLine("Le {0} joue la position couche : {1}, ligne : {2}, colonne : {3}", match1.Mode, position.X, position.Y, position.Z);
-                match1.Play(position);
+                match1.Play(position,-1);
                 Console.WriteLine("Statut Plateau");
                 GameBoard.display(match1.GameBoardMatrix);
                 Console.WriteLine("\n ----------------------");
@@ -62,14 +63,14 @@ namespace Serveur.ModelGame
         public static void LaunchRandomGameShowFinalState()
         {
             Random rnd = new Random();
-            Game match1 = new Game();
+            Game match1 = new Game(-1,-1);
             Vector3 position = new Vector3();
             while (!match1.EndGame)
             {
                 position.X = rnd.Next(0, 3);
                 position.Y = rnd.Next(0, 3);
                 position.Z = rnd.Next(0, 3);
-                match1.Play(position);
+                match1.Play(position,-1);
 
             }
             Console.WriteLine("\n ----------------------");
@@ -84,33 +85,33 @@ namespace Serveur.ModelGame
         public static bool GamePlayer1Win()
         {
             bool test = true;
-            Game match1 = new Game();
+            Game match1 = new Game(1,2);
             Vector3 position = new Vector3();
             // Player 1 plays
             position.X = 1;
             position.Y = 1;
             position.Z = 1;
-            match1.Play(position);
+            match1.Play(position,1);
             // Player 2 plays
             position.X = 0;
             position.Y = 0;
             position.Z = 1;
-            match1.Play(position);
+            match1.Play(position,2);
             // Player 1 plays
             position.X = 0;
             position.Y = 1;
             position.Z = 1;
-            match1.Play(position);
+            match1.Play(position,1);
             // Player 2 plays
             position.X = 0;
             position.Y = 0;
             position.Z = 0;
-            match1.Play(position);
+            match1.Play(position,2);
             // Player 1 plays
             position.X = 2;
             position.Y = 1;
             position.Z = 1;
-            match1.Play(position);
+            match1.Play(position,1);
             if (match1.EndGame != true)
             {
                 Console.WriteLine("erreur de declaration de fin de jeu");
@@ -128,8 +129,8 @@ namespace Serveur.ModelGame
         public static void RandomGameWithSerializationOfOneGameStatus(int numberRoundSerialization)
         {
             Random rnd = new Random();
-            Game match1 = new Game();
-            Game match2 = new Game();
+            Game match1 = new Game(1,2);
+            Game match2 = new Game(3,4);
             Vector3 position = new Vector3();
             int compt = 0;
             bool Match2Created = false;
@@ -140,7 +141,7 @@ namespace Serveur.ModelGame
                 position.X = rnd.Next(0, 3);
                 position.Y = rnd.Next(0, 3);
                 position.Z = rnd.Next(0, 3);
-                match1.Play(position);
+                match1.Play(position,1);
                 if (compt == numberRoundSerialization)
                 {
                     byte[] data = Serialization.SerializationMatchStatus(match1);

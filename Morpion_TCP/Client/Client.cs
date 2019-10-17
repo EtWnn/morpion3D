@@ -13,14 +13,15 @@ namespace Client
 {
     public class Client
     {
-        private static Int32 port = 13000;
-        private static IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+        private Int32 port = 13000;
+        private IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
-        private static Mutex mutex = new Mutex();
-        public static Dictionary<int, User> connected_users = new Dictionary<int, User>();
+        private Mutex mutex = new Mutex();
+        public Dictionary<int, User> connected_users = new Dictionary<int, User>();
+
         public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
 
-        static void DisplayOtherUser()
+        void DisplayOtherUser()
         {
             Console.WriteLine($"Voici les {connected_users.Count} autres utilisateurs:");
             foreach (var user in connected_users.Values)
@@ -29,13 +30,23 @@ namespace Client
             }
         }
 
+        void DisplayMatchRequest()
+        {
+            Console.WriteLine($"Voici les {gameRequestsRecieved.Count} requêtes reçues");
+            foreach (var r in gameRequestsRecieved.Values)
+            {
+                r.Display();
+            }
+        }
+
         static void Main(string[] args)
         {
+            Client my_client = new Client();
             Console.WriteLine("Bonjour Client !");
 
-            IPEndPoint remoteEP = new IPEndPoint(localAddr, port);
-            Socket sender = new Socket(localAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            Console.WriteLine($"Press a key to Connect to the server {localAddr}");
+            IPEndPoint remoteEP = new IPEndPoint(my_client.localAddr, my_client.port);
+            Socket sender = new Socket(my_client.localAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            Console.WriteLine($"Press a key to Connect to the server {my_client.localAddr}");
             Console.ReadKey();
             Console.Write('\n');
 
@@ -44,7 +55,7 @@ namespace Client
             NetworkStream stream = new NetworkStream(sender);
 
             //launching the listening thread
-            Thread listeningThread = new Thread(() => Listen(stream));
+            Thread listeningThread = new Thread(() => my_client.Listen(stream));
             listeningThread.Start();
 
             //entering the commands loop
@@ -53,9 +64,12 @@ namespace Client
             {
                 Console.WriteLine("Que voulez-vous faire?" +
                     "\n\t0-envoyer un message" +
-                    "\n\t1-demander les utilisateurs connectés" +
+                    "\n\t1-demander les utilisateurs connectés"+
                     "\n\t2-changer de UserName" +
-                    "\n\t3-afficher les utilisateurs connectés");
+                    "\n\t3-afficher les utilisateurs connectés" +
+                    "\n\t4-afficher les rêquetes de match" +
+                    "\n\t5-répondre à une requête de match" +
+                    "\n\t6-exprimer une requête de match");
                 string choice = Console.ReadLine();
                 if (choice == "0")
                 {
@@ -78,7 +92,22 @@ namespace Client
                 }
                 else if (choice == "3")
                 {
-                    DisplayOtherUser();
+                    my_client.DisplayOtherUser();
+                }
+                else if (choice == "4")
+                {
+                    my_client.DisplayMatchRequest();
+                }
+                else if(choice == "5")
+                {
+
+                }
+                else if(choice == "6")
+                {
+                    Console.WriteLine("Entrez l'id de l'adversaire souhaité:");
+                    int id = Convert.ToInt32(Console.ReadLine());
+                    Messaging.RequestMatch(stream, id);
+                    Console.WriteLine("Requête envoyée");
                 }
                 else
                 {
@@ -89,7 +118,7 @@ namespace Client
 
         }
 
-        static void Listen(NetworkStream stream)
+        void Listen(NetworkStream stream)
         {
             bool continuer = true;
             while (continuer)
@@ -119,7 +148,7 @@ namespace Client
                         }
                         else if (cmd_type == NomCommande.OUS)
                         {
-                            Messaging.RecieveOtherUsers(following_bytes, ref connected_users);
+                            Messaging.RecieveOtherUsers(following_bytes, this);
                         }
                     }
 

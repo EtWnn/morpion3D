@@ -23,14 +23,24 @@ namespace Serveur
             TcpListener server = null;
             server = new TcpListener(localAddr, port);
             server.Start();
+
+            int next_id = 0;
+            Dictionary<int, UserHandler> userHandlers = new Dictionary<int, UserHandler>();
+            Mutex usersMutex = new Mutex();
             UserHandler.InnitMethods();
 
             while (continuer)
             {
 
                 TcpClient client = server.AcceptTcpClient();
-                UserHandler new_userHandler = new UserHandler(client); //un nouveau canal de communication est crée pour le nouvel utilisateur
-                                                                       // toute la suite est gérée dans la classe UserHandler
+
+                usersMutex.WaitOne();
+                userHandlers[next_id] = new UserHandler(client, next_id, userHandlers, usersMutex);
+                userHandlers[next_id].Start();
+                usersMutex.ReleaseMutex();
+
+                Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {next_id}");
+                next_id++;
 
             }
 

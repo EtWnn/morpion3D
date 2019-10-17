@@ -52,11 +52,11 @@ namespace Client.Functions
 
         }
 
-        public static void RecieveOtherUsers(byte[] bytes, ref Dictionary<int, User> connected_users)
+        public static void RecieveOtherUsers(byte[] bytes, Client client)
         {
             int n_users = BitConverter.ToInt16(bytes, 0);
             //Console.WriteLine($"I recieved {n_users} users");
-            connected_users = new Dictionary<int, User>();
+            client.connected_users = new Dictionary<int, User>();
             int byte_compt = 2;
             for(int i = 0; i < n_users; i++)
             {
@@ -64,7 +64,7 @@ namespace Client.Functions
                 int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
                 string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
 
-                connected_users[user_id] = new User(user_id, userName);
+                client.connected_users[user_id] = new User(user_id, userName);
             }
 
         }

@@ -11,23 +11,7 @@ namespace Serveur.Models
 {
     public class UserHandler
     {
-        private static Mutex mutex = new Mutex();
-        private static Dictionary<int, UserHandler> userHandlers = new Dictionary<int, UserHandler> { };
-        public static Dictionary<int, UserHandler> UsersHandlers
-        {
-            get
-            {
-                mutex.WaitOne();
-                Dictionary<int, UserHandler> userHandlers_copy = new Dictionary<int, UserHandler>(userHandlers);
-                mutex.ReleaseMutex();
-                return userHandlers_copy;
-                
-            }
-        }
-        private static int next_id = 0;
-
         private static Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>> methods = new Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>>();
-
         public static void InnitMethods()
         {
             methods[NomCommande.MSG] = Messaging.RecieveMessage;
@@ -38,28 +22,49 @@ namespace Serveur.Models
         }
 
 
+        private Mutex usersMutex = new Mutex();
+        private Dictionary<int, UserHandler> userHandlers;
+        public Dictionary<int, UserHandler> UsersHandlers
+        {
+            set
+            {
+                usersMutex.WaitOne();
+                userHandlers = value;
+                usersMutex.ReleaseMutex();
+            }
+            get
+            {
+                usersMutex.WaitOne();
+                Dictionary<int, UserHandler> userHandlers_copy = new Dictionary<int, UserHandler>(userHandlers);
+                usersMutex.ReleaseMutex();
+                return userHandlers_copy;
+                
+            }
+        }
+        
+
+        
+        
+
+
         public int Id { get; private set; }
         public string UserName { get; set; }
         public TcpClient clientSocket { get; set; }
         public ModelGame.Game Game { get; set; } 
 
-        public UserHandler(TcpClient inClientSocket)
+        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex)
         {
             this.clientSocket = inClientSocket;
-            this.UserName = "default_" + next_id.ToString();
-            this.Id = next_id;
+            this.UserName = "default_" + id.ToString();
+            this.Id = id;
             this.Game = null;
+            this.UsersHandlers = userHandlers;
+            this.usersMutex = usersMutex;
 
-            mutex.WaitOne();
-            userHandlers[this.Id] = this; //on stocke le nouvel utilisateur dans le dictionnaire static users
-            userHandlers[this.Id].Start(); //on lance le canal de communication avec le nouvel utilisateur
-            mutex.ReleaseMutex();
-
-            Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {this.Id}");
-            next_id++;
+            
         }
 
-        private void Start()
+        public void Start()
         {
             Thread ctThread = new Thread(DoChat);
             ctThread.Start();
@@ -69,7 +74,7 @@ namespace Serveur.Models
         {
             bool continuer = true;
             NetworkStream stream = this.clientSocket.GetStream();
-            Messaging.SendMessage(stream, "Hi new user!");
+            Messaging.SendMessage(stream, "Hi new user! You have been assigned the id " + this.Id.ToString() );
 
             while (continuer)
             {
