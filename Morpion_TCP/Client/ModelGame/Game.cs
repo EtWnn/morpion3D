@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Xml.Serialization;
 
-namespace Client.ModelGame
+namespace MyClient.ModelGame
 {
 
     public enum Cell

@@ -1,4 +1,4 @@
-﻿using Client.Models;
+﻿using MyClient.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,20 +6,21 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Numerics;
-using Client.ModelGame;
+using MyClient.ModelGame;
 
-namespace Client.Functions
+namespace MyClient.Functions
 {
     public enum NomCommande
     {
-        MSG,
-        USN,
-        OUS,
-        MRQ,
+        MSG, //message
+        USN, //username
+        OUS, //other users
+        MRQ, //match request
         RQS,
-        NPP,
-        DGB,
-        GRR
+        NPP, //New position played 
+        DGB, // game board
+        GRR, // request response
+        RGR, // recieve game request
 
     }
 
@@ -81,7 +82,7 @@ namespace Client.Functions
 
         }
 
-        public static void RecieveOtherUsers(byte[] bytes, Client client)
+        public static void RecieveOtherUsers(byte[] bytes, MyClient client)
         {
             int n_users = BitConverter.ToInt16(bytes, 0);
             //Console.WriteLine($"I recieved {n_users} users");
@@ -179,7 +180,7 @@ namespace Client.Functions
             //lancer la partie ou retour au menu
         }
 
-        public static void RecieveGameRequest(byte[] bytes, Client client)
+        public static void RecieveGameRequest(byte[] bytes, MyClient client)
         {
             int byte_compt = 0;
             int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
@@ -190,7 +191,7 @@ namespace Client.Functions
         }
 
         // ADD new command for response to game request (with updating of the dictionary)
-        public static void SendGameRequestResponse(NetworkStream stream, Client client, int idOpponent, bool response)
+        public static void SendGameRequestResponse(NetworkStream stream, MyClient client, int idOpponent, bool response)
         {
             if (response)
             {

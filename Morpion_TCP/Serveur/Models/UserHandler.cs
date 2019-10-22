@@ -49,6 +49,7 @@ namespace Serveur.Models
 
         public int Id { get; private set; }
         public string UserName { get; set; }
+        public NetworkStream stream;
         public TcpClient clientSocket { get; set; }
         public ModelGame.Game Game { get; set; } 
 
@@ -73,7 +74,7 @@ namespace Serveur.Models
         private void DoChat()
         {
             bool continuer = true;
-            NetworkStream stream = this.clientSocket.GetStream();
+            stream = this.clientSocket.GetStream();
             Messaging.SendMessage(stream, "Hi new user! You have been assigned the id " + this.Id.ToString() );
 
             while (continuer)
@@ -129,6 +130,36 @@ namespace Serveur.Models
             username_bytes.CopyTo(bytes, id_bytes.Length + username_length_bytes.Length);
 
             return bytes;
+        }
+
+        public bool IsAlive()
+        {
+            try
+            {
+                byte[] test = new byte[1];
+                this.stream.Write(test, 0, test.Length);
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            return true;
+            
+            //return this.clientSocket.Client.Poll(01, SelectMode.SelectWrite) && this.clientSocket.Client.Poll(01, SelectMode.SelectRead) && !this.clientSocket.Client.Poll(01, SelectMode.SelectError) ? true : false;
+            /*if(this.clientSocket.Client.Poll(0, SelectMode.SelectRead))
+            {
+                byte[] buff = new byte[1];
+                if (this.clientSocket.Client.Receive(buff, SocketFlags.Peek) == 0)
+                {
+                    // Client disconnected
+                    return false; ;
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }*/
         }
     }
 }
