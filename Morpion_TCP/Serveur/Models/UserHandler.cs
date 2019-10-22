@@ -112,7 +112,6 @@ namespace Serveur.Models
                 catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
                 {
                     continuer = false;
-                    Console.WriteLine(" >> " + ex.ToString());
                 }
             }
 
@@ -134,10 +133,12 @@ namespace Serveur.Models
 
         public bool IsAlive()
         {
+            //Messaging.SendMessage(this.stream, "test ping2" + this.Id.ToString());
             try
             {
-                byte[] test = new byte[1];
-                this.stream.Write(test, 0, test.Length);
+                /*byte[] test = new byte[1];
+                this.stream.Write(test, 0, test.Length);*/
+                Messaging.SendMessage(this.stream, "test ping" + this.Id.ToString());
             }
             catch (Exception ex)
             {
@@ -145,21 +146,7 @@ namespace Serveur.Models
             }
             return true;
             
-            //return this.clientSocket.Client.Poll(01, SelectMode.SelectWrite) && this.clientSocket.Client.Poll(01, SelectMode.SelectRead) && !this.clientSocket.Client.Poll(01, SelectMode.SelectError) ? true : false;
-            /*if(this.clientSocket.Client.Poll(0, SelectMode.SelectRead))
-            {
-                byte[] buff = new byte[1];
-                if (this.clientSocket.Client.Receive(buff, SocketFlags.Peek) == 0)
-                {
-                    // Client disconnected
-                    return false; ;
-                }
-                return true;
-            }
-            else
-            {
-                return false;
-            }*/
+
         }
     }
 }
