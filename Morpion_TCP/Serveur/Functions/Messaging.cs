@@ -16,7 +16,8 @@ namespace Serveur.Functions
         USN,
         OUS,
         NPP,
-        DGB
+        DGB,
+        MRQ
     }
 
     public class Messaging
@@ -115,8 +116,10 @@ namespace Serveur.Functions
 
         public static byte[] TransferMatchRequest(byte[] bytes, UserHandler userHandler)
         {
+            // creer fonction de serialization desarialization pour le client
             int id = BitConverter.ToInt16(bytes, 0);
-
+            // a modif byte[] msg = serializationMessage(id.ToString, NomCommande.MRQ);
+            //userHandler.UsersHandlers[id].stream.Write(msg);
             return new byte[0];
         }
 
