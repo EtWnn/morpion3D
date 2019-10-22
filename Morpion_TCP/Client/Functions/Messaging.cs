@@ -196,7 +196,7 @@ namespace Client.Functions
             {
                 byte[] bytes = encodingMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
                 stream.Write(bytes, 0, bytes.Length);
-                client.Opponent = Client.connected_users[idOpponent];
+                client.Opponent = client.connected_users[idOpponent];
                 foreach (var opponent in client.gameRequestsRecieved)
                 {
                     bytes = encodingMessage(serializationResponseOpponent(opponent.Key, !response), NomCommande.GRR);
