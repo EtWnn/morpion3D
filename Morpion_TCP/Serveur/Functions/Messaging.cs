@@ -21,6 +21,26 @@ namespace Serveur.Functions
 
     public class Messaging
     {
+        private static byte[] serializationMessage(byte[] message_bytes, NomCommande nomCommande)
+        {
+            //command in bytes
+            var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
+            //length of the content in bytes
+            var message_length = BitConverter.GetBytes((Int16)message_bytes.Length);
+
+            byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
+
+            //command
+            cmd.CopyTo(msg, 0);
+            //length to follow
+            message_length.CopyTo(msg, cmd.Length);
+            //content
+            message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
+
+            //renvoie le tableau de bytes
+            return msg;
+        }
+
         public static byte[] RecieveUserName(byte[] bytes, UserHandler userHandler)
         {
             string userName = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
@@ -83,11 +103,13 @@ namespace Serveur.Functions
 
         public static byte[] SendGameBoard(byte[] bytes, UserHandler userHandler)
         {
-            byte[] response = Serialization.SerializationMatchStatus(userHandler.Game);
+            byte[] bytesGame = Serialization.SerializationMatchStatus(userHandler.Game);
             if (!(userHandler.Game.Mode == GameMode.Player1 || userHandler.Game.Mode == GameMode.Player2))
             {
                 userHandler.Game = null;
             }
+
+            byte[] response = serializationMessage(bytesGame, NomCommande.DGB);
             return response;
         }
 
@@ -98,6 +120,7 @@ namespace Serveur.Functions
             return new byte[0];
         }
 
+        // A supprimer !
         public static void SendMessage(NetworkStream stream, string message)
         {
             //command in bytes
