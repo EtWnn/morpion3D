@@ -1,19 +1,53 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class OnlineStatusScript : MonoBehaviour
 {
+    public enum EState
+    {
+        None,
+        Offline,
+        Online,
+    }
+
+    private bool update;
+    private EState _state;
+    public EState State
+    { 
+        get => _state;
+        set
+        {
+            if (value != State)
+            {
+                _state = value;
+                update = true;
+            }
+        }
+    }
+
     public Color OfflineColor;
     public Color OnlineColor;
 
-    public string OfflineText = "Offline";
-    public string OnlineText = "Online";
+    public string OfflineText;
+    public string OnlineText;
 
     private Image image;
     private TextMeshProUGUI text;
+    
+    public void OnConnected(object sender, EventArgs e)
+    {
+        State = EState.Online;
+    }
+
+    public void OnDisconnect(object sender, EventArgs e)
+    {
+        State = EState.Offline;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -31,34 +65,29 @@ public class OnlineStatusScript : MonoBehaviour
         text.text = OfflineText;
     }
 
-    public void SetOnlineStatus(bool isOnline)
+    private void updateState()
     {
-        image.color = isOnline ? OnlineColor : OfflineColor;
-        text.text = isOnline ? OnlineText : OfflineText;
+        switch (State)
+        {
+            case EState.Offline:
+                image.color = OfflineColor;
+                text.text = OfflineText;
+                break;
+            case EState.Online:
+                image.color = OnlineColor;
+                text.text = OnlineText;
+                break;
+            default:
+                image.color = OfflineColor;
+                text.text = OfflineText;
+                break;
+        }
     }
 
     private void Update()
     {
-        //if (Input.GetKeyDown(KeyCode.B))
-        //    StartCoroutine("Blink");
+        if (update)
+            updateState();
     }
 
-    IEnumerator Blink()
-    {
-        Debug.Log("Blink started");
-
-        float period = 0.2f;
-        bool alt = false;
-        while (true)
-        {
-            SetOnlineStatus(alt);
-            alt = !alt;
-            yield return new WaitForSeconds(period);
-        }
-    }
-
-    public void SetActive(bool value)
-    {
-        gameObject.SetActive(value);
-    }
 }
