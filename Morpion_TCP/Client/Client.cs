@@ -30,7 +30,14 @@ namespace MyClient
 
         public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
         public User Opponent = null;
-        
+
+        private static Dictionary<NomCommande, Action<byte[], MyClient>> methods = new Dictionary<NomCommande, Action<byte[], MyClient>>();
+        public static void InnitMethods()
+        {
+            methods[NomCommande.OUS] = Messaging.RecieveOtherUsers;
+            methods[NomCommande.RGR] = Messaging.RecieveGameRequest;
+        }
+
         public void tryConnect()
         {
             if( this._socket == null || !this._socket.Connected)
@@ -101,19 +108,10 @@ namespace MyClient
                         {
                             Messaging.RecieveMessage(following_bytes);
                         }
-                        else if (cmd_type == NomCommande.OUS)
+                        else
                         {
-                            Messaging.RecieveOtherUsers(following_bytes, this);
+                            MyClient.methods[(NomCommande)Enum.Parse(typeof(NomCommande), cmd)](following_bytes, this);
                         }
-                        else if (cmd_type == NomCommande.RGR)
-                        {
-                            Messaging.RecieveGameRequest(following_bytes, this);
-                        }
-                        else if (cmd_type == NomCommande.RGR)
-                        {
-                            Messaging.RecieveGameRequest(following_bytes, this);
-                        }
-
                     }
 
 
@@ -126,6 +124,8 @@ namespace MyClient
                 }
             }
         }
+
+
 
         void DisplayOtherUser()
         {
