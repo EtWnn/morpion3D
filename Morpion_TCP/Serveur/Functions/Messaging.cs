@@ -116,11 +116,32 @@ namespace Serveur.Functions
 
         public static byte[] TransferMatchRequest(byte[] bytes, UserHandler userHandler)
         {
-            // creer fonction de serialization desarialization pour le client
-            int id = BitConverter.ToInt16(bytes, 0);
-            // a modif byte[] msg = serializationMessage(id.ToString, NomCommande.MRQ);
-            //userHandler.UsersHandlers[id].stream.Write(msg);
+            int idRecipient = BitConverter.ToInt16(bytes, 0);
+            int idSender = userHandler.Id;
+            string userNameSender = userHandler.UserName;
+            byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
+            byte[] msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
+            userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
             return new byte[0];
+        }
+
+        private static byte[] serializationGameRequest(int id, string userName)
+        {
+            byte[] user_id_bytes = BitConverter.GetBytes((Int16)id);
+            byte[] userName_bytes = Encoding.UTF8.GetBytes(userName);
+            byte[] userName_lenght = BitConverter.GetBytes((Int16)userName_bytes.Length);
+
+            byte[] message_bytes = new byte[user_id_bytes.Length + userName_lenght.Length + userName_bytes.Length];
+
+            //command
+            user_id_bytes.CopyTo(message_bytes, 0);
+            //length to follow
+            userName_lenght.CopyTo(message_bytes, user_id_bytes.Length);
+            //content
+            userName_bytes.CopyTo(message_bytes, user_id_bytes.Length + userName_bytes.Length);
+
+            return (message_bytes);
+             
         }
 
         // A supprimer !
