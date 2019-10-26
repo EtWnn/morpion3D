@@ -49,10 +49,11 @@ namespace MyClient.Functions
         {
             //command in bytes
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
-            //length of the content in bytes
-            var message_length = BitConverter.GetBytes((Int16)message.Length);
             //content in bytes
             var message_bytes = Encoding.UTF8.GetBytes(message);
+            //length of the content in bytes
+            var message_length = BitConverter.GetBytes((Int16)message_bytes.Length);
+            
 
             byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
 
@@ -85,11 +86,17 @@ namespace MyClient.Functions
             //renvoie le tableau de bytes
             return msg;
         }
-        private static string serializationResponseOpponent(int idOpponent, bool response)
+        private static byte[] serializationResponseOpponent(int idOpponent, bool response)
         {
-            string message = idOpponent.ToString() + response.ToString();
+            byte[] idOpponent_bytes = BitConverter.GetBytes((Int16)idOpponent);
+            byte[] response_bytes = BitConverter.GetBytes(response);
+            byte[] message = new byte[idOpponent_bytes.Length + response_bytes.Length];
+            idOpponent_bytes.CopyTo(message, 0);
+            response_bytes.CopyTo(message, idOpponent_bytes.Length);
             return message;
         }
+
+        
         private static User deserializationReceiveGameRequest(byte[] bytes)
         {
             int byte_compt = 0;
@@ -145,7 +152,7 @@ namespace MyClient.Functions
 
         public static void RequestMatch(NetworkStream stream, int id)
         {
-            byte[] msg = serializationMessage(id.ToString(), NomCommande.MRQ);
+            byte[] msg = serializationMessage(BitConverter.GetBytes((Int16)id), NomCommande.MRQ);
             stream.Write(msg, 0, msg.Length);
         }
 
@@ -167,6 +174,7 @@ namespace MyClient.Functions
         // ADD new command for response to game request (with updating of the dictionary)
         public static void SendGameRequestResponse(NetworkStream stream, MyClient client, int idOpponent, bool response)
         {
+            AskOtherUsers(stream);
             if (response)
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);

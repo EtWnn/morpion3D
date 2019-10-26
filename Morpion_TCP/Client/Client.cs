@@ -35,7 +35,8 @@ namespace MyClient
         public static void InnitMethods()
         {
             methods[NomCommande.OUS] = Messaging.RecieveOtherUsers;
-            methods[NomCommande.RGR] = Messaging.RecieveGameRequest;
+            methods[NomCommande.RGR] = Messaging.RecieveGameRequest;//inutile
+            methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
         }
 
         public void tryConnect()
@@ -97,8 +98,10 @@ namespace MyClient
                         int following_length = BitConverter.ToInt16(bytes, 3);
 
                         byte[] following_bytes = new byte[following_length];
-                        stream.Read(following_bytes, 0, following_bytes.Length);
-
+                        if (following_length > 0)
+                        {
+                            stream.Read(following_bytes, 0, following_bytes.Length);
+                        }
                         //Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {NombreOctets}");
 
                         string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
@@ -110,7 +113,7 @@ namespace MyClient
                         }
                         else
                         {
-                            MyClient.methods[(NomCommande)Enum.Parse(typeof(NomCommande), cmd)](following_bytes, this);
+                            MyClient.methods[cmd_type](following_bytes, this);
                         }
                     }
 
@@ -148,6 +151,7 @@ namespace MyClient
         static void Main(string[] args)
         {
             MyClient my_client = new MyClient();
+            MyClient.InnitMethods();
             Console.WriteLine("Bonjour Client !");
 
             //entering the commands loop

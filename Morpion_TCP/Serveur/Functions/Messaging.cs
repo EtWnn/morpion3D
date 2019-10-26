@@ -18,6 +18,7 @@ namespace Serveur.Functions
         NPP,
         DGB,
         MRQ,
+        GRR,
     }
 
     public class Messaging
@@ -41,7 +42,31 @@ namespace Serveur.Functions
             //renvoie le tableau de bytes
             return msg;
         }
+        private static byte[] serializationGameRequest(int id, string userName)
+        {
+            byte[] user_id_bytes = BitConverter.GetBytes((Int16)id);
+            byte[] userName_bytes = Encoding.UTF8.GetBytes(userName);
+            byte[] userName_lenght = BitConverter.GetBytes((Int16)userName_bytes.Length);
 
+            byte[] message_bytes = new byte[user_id_bytes.Length + userName_lenght.Length + userName_bytes.Length];
+
+            //command
+            user_id_bytes.CopyTo(message_bytes, 0);
+            //length to follow
+            userName_lenght.CopyTo(message_bytes, user_id_bytes.Length);
+            //content
+            userName_bytes.CopyTo(message_bytes, user_id_bytes.Length + userName_lenght.Length);
+
+            return (message_bytes);
+
+        }
+        private static Tuple<int, bool> deserializationResponseOpponent(byte[] bytes)
+        {
+            int byte_compt = 0;
+            int idOpponent = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
+            bool response = BitConverter.ToBoolean(bytes, byte_compt);
+            return Tuple.Create(idOpponent, response);
+        }
         public static byte[] RecieveUserName(byte[] bytes, UserHandler userHandler)
         {
             string userName = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
@@ -102,7 +127,7 @@ namespace Serveur.Functions
             return new byte[0];
         }
 
-        public static byte[] SendGameBoard(byte[] bytes, UserHandler userHandler)
+        public static byte[] SendGameBoard(UserHandler userHandler)
         {
             byte[] bytesGame = Serialization.SerializationMatchStatus(userHandler.Game);
             if (!(userHandler.Game.Mode == GameMode.Player1 || userHandler.Game.Mode == GameMode.Player2))
@@ -116,8 +141,11 @@ namespace Serveur.Functions
 
         public static byte[] TransferMatchRequest(byte[] bytes, UserHandler userHandler)
         {
+            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest bytes.Lenght : {bytes.Length}");
             int idRecipient = BitConverter.ToInt16(bytes, 0);
+            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest idRecipient : {idRecipient}");
             int idSender = userHandler.Id;
+            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest idSender : {idSender}");
             string userNameSender = userHandler.UserName;
             byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
             byte[] msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
@@ -125,25 +153,27 @@ namespace Serveur.Functions
             return new byte[0];
         }
 
-        private static byte[] serializationGameRequest(int id, string userName)
+        /*public static byte[] TransferGameRequestResponse(byte[] bytes, UserHandler userHandler)
         {
-            byte[] user_id_bytes = BitConverter.GetBytes((Int16)id);
-            byte[] userName_bytes = Encoding.UTF8.GetBytes(userName);
-            byte[] userName_lenght = BitConverter.GetBytes((Int16)userName_bytes.Length);
-
-            byte[] message_bytes = new byte[user_id_bytes.Length + userName_lenght.Length + userName_bytes.Length];
-
-            //command
-            user_id_bytes.CopyTo(message_bytes, 0);
-            //length to follow
-            userName_lenght.CopyTo(message_bytes, user_id_bytes.Length);
-            //content
-            userName_bytes.CopyTo(message_bytes, user_id_bytes.Length + userName_bytes.Length);
-
-            return (message_bytes);
-             
-        }
-
+            int idSender = userHandler.Id;
+            Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
+            int idRecipient = tuple.Item1;
+            bool response = tuple.Item2;
+            byte[] msg = new byte[0];
+            if (response)
+            {
+                userHandler.Game = new Game(idSender, idRecipient);
+                byte[] bytesGame = Serialization.SerializationMatchStatus(userHandler.Game);
+                msg = serializationMessage(bytesGame, NomCommande.DGB);
+                userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
+            }
+            else
+            {
+                
+            }
+            return msg;
+        }*/
+        
         // A supprimer !
         public static void SendMessage(NetworkStream stream, string message)
         {
