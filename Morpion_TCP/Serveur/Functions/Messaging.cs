@@ -17,7 +17,7 @@ namespace Serveur.Functions
         OUS,
         NPP,
         DGB,
-        MRQ
+        MRQ,
     }
 
     public class Messaging

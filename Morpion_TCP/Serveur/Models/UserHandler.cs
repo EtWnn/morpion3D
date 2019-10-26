@@ -19,6 +19,7 @@ namespace Serveur.Models
             methods[NomCommande.OUS] = Messaging.SendOtherUsers;
             methods[NomCommande.NPP] = Messaging.ReceivePositionPlayed;
             methods[NomCommande.DGB] = Messaging.SendGameBoard;
+            methods[NomCommande.MRQ] = Messaging.TransferMatchRequest;
         }
 
 

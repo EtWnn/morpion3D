@@ -90,6 +90,14 @@ namespace MyClient.Functions
             string message = idOpponent.ToString() + response.ToString();
             return message;
         }
+        private static User deserializationReceiveGameRequest(byte[] bytes)
+        {
+            int byte_compt = 0;
+            int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
+            int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
+            string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
+            return new User(user_id, userName);
+        }
 
         // General commands
         public static void RecieveMessage(byte[] bytes)
