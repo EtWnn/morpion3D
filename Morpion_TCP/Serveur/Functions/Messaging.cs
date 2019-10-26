@@ -19,6 +19,7 @@ namespace Serveur.Functions
         DGB,
         MRQ,
         GRR,
+        RGR
     }
 
     public class Messaging
@@ -59,6 +60,15 @@ namespace Serveur.Functions
 
             return (message_bytes);
 
+        }
+        private static byte[] serializationResponseOpponent(int idOpponent, bool response)
+        {
+            byte[] idOpponent_bytes = BitConverter.GetBytes((Int16)idOpponent);
+            byte[] response_bytes = BitConverter.GetBytes(response);
+            byte[] message = new byte[idOpponent_bytes.Length + response_bytes.Length];
+            idOpponent_bytes.CopyTo(message, 0);
+            response_bytes.CopyTo(message, idOpponent_bytes.Length);
+            return message;
         }
         private static Tuple<int, bool> deserializationResponseOpponent(byte[] bytes)
         {
@@ -153,7 +163,7 @@ namespace Serveur.Functions
             return new byte[0];
         }
 
-        /*public static byte[] TransferGameRequestResponse(byte[] bytes, UserHandler userHandler)
+        public static byte[] TransferGameRequestResponse(byte[] bytes, UserHandler userHandler)
         {
             int idSender = userHandler.Id;
             Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
@@ -162,18 +172,21 @@ namespace Serveur.Functions
             byte[] msg = new byte[0];
             if (response)
             {
-                userHandler.Game = new Game(idSender, idRecipient);
-                byte[] bytesGame = Serialization.SerializationMatchStatus(userHandler.Game);
-                msg = serializationMessage(bytesGame, NomCommande.DGB);
+                byte[] msg_bytes = serializationResponseOpponent(idSender, response);
+                msg = serializationMessage(msg_bytes, NomCommande.RGR);
                 userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
+                Game game = new Game(idSender, idRecipient);
+                userHandler.Game = game;
+                userHandler.UsersHandlers[idRecipient].Game = game;
             }
             else
             {
                 
             }
             return msg;
-        }*/
+        }
         
+
         // A supprimer !
         public static void SendMessage(NetworkStream stream, string message)
         {

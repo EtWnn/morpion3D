@@ -95,8 +95,13 @@ namespace MyClient.Functions
             response_bytes.CopyTo(message, idOpponent_bytes.Length);
             return message;
         }
-
-        
+        private static Tuple<int, bool> deserializationResponseOpponent(byte[] bytes)
+        {
+            int byte_compt = 0;
+            int idOpponent = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
+            bool response = BitConverter.ToBoolean(bytes, byte_compt);
+            return Tuple.Create(idOpponent, response);
+        }
         private static User deserializationReceiveGameRequest(byte[] bytes)
         {
             int byte_compt = 0;
@@ -156,9 +161,15 @@ namespace MyClient.Functions
             stream.Write(msg, 0, msg.Length);
         }
 
-        public static void RecieveGameRequestStatus(byte[] bytes)
+        public static void RecieveGameRequestStatus(byte[] bytes, MyClient client)
         {
-            //lancer la partie ou retour au menu
+            Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
+            int idOpponent = tuple.Item1;
+            bool response = tuple.Item2;
+            if (response)
+            {
+                client.Opponent = client.connected_users[idOpponent];
+            }
         }
 
         public static void RecieveGameRequest(byte[] bytes, MyClient client)
@@ -175,12 +186,20 @@ namespace MyClient.Functions
         public static void SendGameRequestResponse(NetworkStream stream, MyClient client, int idOpponent, bool response)
         {
             AskOtherUsers(stream);
+
             if (response)
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
                 stream.Write(bytes, 0, bytes.Length);
+                foreach (var key in client.connected_users.Keys)
+                {
+                    Console.WriteLine($"le dictionnaire client.connected_users contient l'id {key} en clef");
+                    client.connected_users[key].Display();
+                }
                 client.Opponent = client.connected_users[idOpponent];
-                foreach (var opponent in client.gameRequestsRecieved)
+                client.gameRequestsRecieved.Remove(idOpponent);
+                var itemsToRemove = client.gameRequestsRecieved.ToArray();
+                foreach (var opponent in itemsToRemove)
                 {
                     bytes = serializationMessage(serializationResponseOpponent(opponent.Key, !response), NomCommande.GRR);
                     stream.Write(bytes, 0, bytes.Length);

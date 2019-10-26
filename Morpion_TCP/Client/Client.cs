@@ -35,7 +35,7 @@ namespace MyClient
         public static void InnitMethods()
         {
             methods[NomCommande.OUS] = Messaging.RecieveOtherUsers;
-            methods[NomCommande.RGR] = Messaging.RecieveGameRequest;//inutile
+            methods[NomCommande.RGR] = Messaging.RecieveGameRequestStatus;
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
         }
 
@@ -102,7 +102,7 @@ namespace MyClient
                         {
                             stream.Read(following_bytes, 0, following_bytes.Length);
                         }
-                        //Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {NombreOctets}");
+                        Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {NombreOctets}");
 
                         string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
                         NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
@@ -167,7 +167,8 @@ namespace MyClient
                     "\n\t5-répondre à une requête de match" +
                     "\n\t6-exprimer une requête de match" +
                     "\n\t7-se déconnecter" +
-                    "\n\t8-se connecter");
+                    "\n\t8-se connecter" +
+                    "\n\t9-afficher l'id de l'adversaire");
                 string choice = Console.ReadLine();
                 if (choice == "0")
                 {
@@ -220,6 +221,17 @@ namespace MyClient
                 {
                     my_client.tryConnect();
                     Console.WriteLine($"Connected to the server {my_client.localAddr}");
+                }
+                else if (choice == "9")
+                {
+                    if (my_client.Opponent != null)
+                    {
+                        Console.WriteLine($"L'id de votre adversaire est: {my_client.Opponent.Id} et son user name est: {my_client.Opponent.UserName}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Aucun adversaire n'est attribué");
+                    }
                 }
                 else
                 {
