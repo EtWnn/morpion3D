@@ -168,6 +168,13 @@ namespace MyClient.Functions
             bool response = tuple.Item2;
             if (response)
             {
+                Console.WriteLine($">> l'identifiant de l'adversaire est {idOpponent}");
+                Console.WriteLine($">> le dictionnaire client.connected_users est :");
+                foreach (int key in client.connected_users.Keys)
+                {
+                    Console.WriteLine($"la clef est {key}");
+                    client.connected_users[key].Display();
+                }
                 client.Opponent = client.connected_users[idOpponent];
             }
         }
@@ -178,7 +185,10 @@ namespace MyClient.Functions
             int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
             int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
             string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
-
+            if (!(client.connected_users.ContainsKey(user_id)))
+            {
+                client.connected_users[user_id]= new User(user_id, userName);
+            }
             client.gameRequestsRecieved[user_id] = new User(user_id, userName);
         }
 
@@ -228,9 +238,10 @@ namespace MyClient.Functions
             stream.Write(msg, 0, msg.Length);
         }
 
-        public static Game RecieveGameBoard(byte[] bytes)
+        public static void RecieveGameBoard(byte[] bytes, MyClient client)
         {
-            return Serialization.DeserializationMatchStatus(bytes);
+            Console.WriteLine($"GameBoard recue");
+            client.GameClient = Serialization.DeserializationMatchStatus(bytes);
         }
     }
 }

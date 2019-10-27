@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MyClient.Functions;
 using MyClient.Models;
+using MyClient.ModelGame;
 
 namespace MyClient
 {
@@ -30,6 +31,7 @@ namespace MyClient
 
         public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
         public User Opponent = null;
+        public Game GameClient = null;
 
         private static Dictionary<NomCommande, Action<byte[], MyClient>> methods = new Dictionary<NomCommande, Action<byte[], MyClient>>();
         public static void InnitMethods()
@@ -37,6 +39,7 @@ namespace MyClient
             methods[NomCommande.OUS] = Messaging.RecieveOtherUsers;
             methods[NomCommande.RGR] = Messaging.RecieveGameRequestStatus;
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
+            methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
         }
 
         public void tryConnect()
@@ -148,6 +151,28 @@ namespace MyClient
             }
         }
 
+        void DisplayGameBoard()
+        {
+            Console.WriteLine($">>Voici le plateau du jeu");
+            GameBoard.display(this.GameClient.GameBoardMatrix); //ajouter une exception
+            if ((this.GameClient.Mode == GameMode.Player1 && this.GameClient.IdPlayer1 != this.Opponent.Id)|| (this.GameClient.Mode == GameMode.Player2 && this.GameClient.IdPlayer2 != this.Opponent.Id))
+            {
+                Console.WriteLine(">> C'est a votre tour de jouer");
+            }
+            else if ((this.GameClient.Mode == GameMode.Player1Won && this.GameClient.IdPlayer1 != this.Opponent.Id) || (this.GameClient.Mode == GameMode.Player2Won && this.GameClient.IdPlayer2 != this.Opponent.Id))
+            {
+                Console.WriteLine(">> Vous avez gagné");
+            }
+            else if ((this.GameClient.Mode == GameMode.Player1Won) || (this.GameClient.Mode == GameMode.Player2Won ))
+            {
+                Console.WriteLine(">> Vous avez perdu");
+            }
+            else
+            {
+                Console.WriteLine(">> Ce n'est pas a votre tour de jouer");
+            }
+        }
+
         static void Main(string[] args)
         {
             MyClient my_client = new MyClient();
@@ -168,7 +193,9 @@ namespace MyClient
                     "\n\t6-exprimer une requête de match" +
                     "\n\t7-se déconnecter" +
                     "\n\t8-se connecter" +
-                    "\n\t9-afficher l'id de l'adversaire");
+                    "\n\t9-afficher l'id de l'adversaire" +
+                    "\n\t10-actualiser le plateau" +
+                    "\n\t11-afficher le plateau");
                 string choice = Console.ReadLine();
                 if (choice == "0")
                 {
@@ -232,6 +259,15 @@ namespace MyClient
                     {
                         Console.WriteLine($"Aucun adversaire n'est attribué");
                     }
+                }
+                else if (choice == "10")
+                {
+                    Messaging.AskGameBoard(my_client.Stream);
+                    Console.WriteLine($"Requête envoyée");
+                }
+                else if (choice == "11")
+                {
+                    my_client.DisplayGameBoard();
                 }
                 else
                 {

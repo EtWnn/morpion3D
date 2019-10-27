@@ -137,7 +137,7 @@ namespace Serveur.Functions
             return new byte[0];
         }
 
-        public static byte[] SendGameBoard(UserHandler userHandler)
+        public static byte[] SendGameBoard(byte[] bytes, UserHandler userHandler) //bytes inutile mais necessaire pour etre mis dans le dico
         {
             byte[] bytesGame = Serialization.SerializationMatchStatus(userHandler.Game);
             if (!(userHandler.Game.Mode == GameMode.Player1 || userHandler.Game.Mode == GameMode.Player2))
@@ -168,16 +168,24 @@ namespace Serveur.Functions
             int idSender = userHandler.Id;
             Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
             int idRecipient = tuple.Item1;
+            Console.WriteLine($">> idSender = userHandler.Id est {idSender}");
+            Console.WriteLine($">> idRecipient est {idRecipient}");
             bool response = tuple.Item2;
             byte[] msg = new byte[0];
             if (response)
             {
                 byte[] msg_bytes = serializationResponseOpponent(idSender, response);
                 msg = serializationMessage(msg_bytes, NomCommande.RGR);
+                Console.WriteLine($"La longueur du msg envoyé à {idRecipient} est {msg.Length}");
                 userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
+
                 Game game = new Game(idSender, idRecipient);
                 userHandler.Game = game;
                 userHandler.UsersHandlers[idRecipient].Game = game;
+
+                msg_bytes = serializationResponseOpponent(idRecipient, response);
+                msg = serializationMessage(msg_bytes, NomCommande.RGR);
+                Console.WriteLine($"La longueur du msg envoyé à {idSender} est {msg.Length}");
             }
             else
             {

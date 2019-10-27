@@ -44,9 +44,16 @@ namespace Serveur.ModelGame
         private const int GAMEBOARDSIZE = 3; // Dimension du plateau
         private List<Vector3> PlayedPositionsPlayer1 = new List<Vector3>();
         private List<Vector3> PlayedPositionsPlayer2 = new List<Vector3>();
-        private int IdPlayer1;
-        private int IdPlayer2;
+        public int IdPlayer1 { get; }
+        public int IdPlayer2 { get; }
 
+        // Constructeur par defaut sans parametres pour le serializeur XML
+        public Game()
+        {
+            Random rnd = new Random();
+            GameBoardMatrix = GameBoard.gameBoardGeneration(GAMEBOARDSIZE);
+            Mode = GameMode.Player1;
+        }
         public Game( int idClient1, int idClient2 )
         {
             Random rnd = new Random();
