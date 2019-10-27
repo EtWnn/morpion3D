@@ -195,7 +195,7 @@ namespace MyClient.Functions
         // ADD new command for response to game request (with updating of the dictionary)
         public static void SendGameRequestResponse(NetworkStream stream, MyClient client, int idOpponent, bool response)
         {
-            AskOtherUsers(stream);
+            AskOtherUsers(stream); //probablement a supprimer maintenant que le dictionnaire connected_users est mis a jour lors de l'appel de la methode RecieveGameRequest
 
             if (response)
             {
