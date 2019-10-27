@@ -133,14 +133,14 @@ namespace Serveur.Functions
         public static byte[] ReceivePositionPlayed(byte[] bytes, UserHandler userHandler)
         {
             Vector3 position = Serialization.DeserializationPositionPlayed(bytes);
-            Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
-            Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
-            Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
+            //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
+            //Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
+            //Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
             userHandler.Game.Play(position, userHandler.Id);
-            Console.WriteLine($"La position a ete jouee");
-            Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
-            Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
-            Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
+            //Console.WriteLine($"La position a ete jouee");
+            //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
+            //Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
+            //Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
             return new byte[0];
         }
 
@@ -175,30 +175,30 @@ namespace Serveur.Functions
             int idSender = userHandler.Id;
             Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
             int idRecipient = tuple.Item1;
-            Console.WriteLine($">> idSender = userHandler.Id est {idSender}");
-            Console.WriteLine($">> idRecipient est {idRecipient}");
+            //Console.WriteLine($">> idSender = userHandler.Id est {idSender}");
+            //Console.WriteLine($">> idRecipient est {idRecipient}");
             bool response = tuple.Item2;
             byte[] msg = new byte[0];
             if (response)
             {
                 byte[] msg_bytes = serializationResponseOpponent(idSender, response);
                 msg = serializationMessage(msg_bytes, NomCommande.RGR);
-                Console.WriteLine($"La longueur du msg envoyé à {idRecipient} est {msg.Length}");
+                //Console.WriteLine($"La longueur du msg envoyé à {idRecipient} est {msg.Length}");
                 userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
 
                 Game game = new Game(idSender, idRecipient);
-                Console.WriteLine($"l'id du player 1 est : {game.IdPlayer1}");
-                Console.WriteLine($"l'id du player 2 est : {game.IdPlayer2}");
+                //Console.WriteLine($"l'id du player 1 est : {game.IdPlayer1}");
+                //Console.WriteLine($"l'id du player 2 est : {game.IdPlayer2}");
                 userHandler.Game = game;
                 userHandler.UsersHandlers[idRecipient].Game = game;
 
                 msg_bytes = serializationResponseOpponent(idRecipient, response);
                 msg = serializationMessage(msg_bytes, NomCommande.RGR);
-                Console.WriteLine($"La longueur du msg envoyé à {idSender} est {msg.Length}");
+                //Console.WriteLine($"La longueur du msg envoyé à {idSender} est {msg.Length}");
             }
             else
             {
-                
+                // pour le moment les client ne gardent pas de traces des requetes de match qu'ils envoient
             }
             return msg;
         }

@@ -39,6 +39,7 @@ namespace Serveur
                 userHandlers[next_id].Start();
                 usersMutex.ReleaseMutex();
 
+                
                 Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {next_id}");
                 next_id++;
 

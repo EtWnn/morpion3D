@@ -114,6 +114,9 @@ namespace Serveur.Models
                 catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
                 {
                     continuer = false;
+                    
+                    
+                    
                     Console.WriteLine(" >> " + ex.ToString());
                 }
             }

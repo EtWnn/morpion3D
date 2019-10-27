@@ -168,13 +168,13 @@ namespace MyClient.Functions
             bool response = tuple.Item2;
             if (response)
             {
-                Console.WriteLine($">> l'identifiant de l'adversaire est {idOpponent}");
-                Console.WriteLine($">> le dictionnaire client.connected_users est :");
+                //Console.WriteLine($">> l'identifiant de l'adversaire est {idOpponent}");
+                /*Console.WriteLine($">> le dictionnaire client.connected_users est :");
                 foreach (int key in client.connected_users.Keys)
                 {
                     Console.WriteLine($"la clef est {key}");
                     client.connected_users[key].Display();
-                }
+                }*/
                 client.Opponent = client.connected_users[idOpponent];
             }
         }
@@ -201,11 +201,6 @@ namespace MyClient.Functions
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
                 stream.Write(bytes, 0, bytes.Length);
-                foreach (var key in client.connected_users.Keys)
-                {
-                    Console.WriteLine($"le dictionnaire client.connected_users contient l'id {key} en clef");
-                    client.connected_users[key].Display();
-                }
                 client.Opponent = client.connected_users[idOpponent];
                 client.gameRequestsRecieved.Remove(idOpponent);
                 var itemsToRemove = client.gameRequestsRecieved.ToArray();
@@ -240,7 +235,7 @@ namespace MyClient.Functions
 
         public static void RecieveGameBoard(byte[] bytes, MyClient client)
         {
-            Console.WriteLine($"GameBoard recue");
+            Console.WriteLine($">>GameBoard recue");
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
         }
     }

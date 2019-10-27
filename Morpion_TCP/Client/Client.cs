@@ -156,22 +156,6 @@ namespace MyClient
         {
             Console.WriteLine($">>Voici le plateau du jeu");
             GameBoard.display(this.GameClient.GameBoardMatrix); //ajouter une exception
-            /*if ((this.GameClient.Mode == GameMode.Player1 && this.GameClient.IdPlayer1 != this.Opponent.Id)|| (this.GameClient.Mode == GameMode.Player2 && this.GameClient.IdPlayer2 != this.Opponent.Id))
-            {
-                Console.WriteLine(">> C'est a votre tour de jouer");
-            }
-            else if ((this.GameClient.Mode == GameMode.Player1Won && this.GameClient.IdPlayer1 != this.Opponent.Id) || (this.GameClient.Mode == GameMode.Player2Won && this.GameClient.IdPlayer2 != this.Opponent.Id))
-            {
-                Console.WriteLine(">> Vous avez gagné");
-            }
-            else if ((this.GameClient.Mode == GameMode.Player1Won) || (this.GameClient.Mode == GameMode.Player2Won ))
-            {
-                Console.WriteLine(">> Vous avez perdu");
-            }
-            else
-            {
-                Console.WriteLine(">> Ce n'est pas a votre tour de jouer");
-            }*/
         }
 
         static void Main(string[] args)
@@ -273,24 +257,20 @@ namespace MyClient
                 }
                 else if (choice == "12")
                 {
-                    Console.WriteLine($"my_client.GameClient.Mode : {my_client.GameClient.Mode }; GameMode.Player1: {GameMode.Player1}; GameMode.Player2 : {GameMode.Player2}");
-                    Console.WriteLine($"my_client.GameClient.IdPlayer1 : {my_client.GameClient.IdPlayer1 }; my_client.GameClient.IdPlayer2: {my_client.GameClient.IdPlayer2}; my_client.Opponent.Id : {my_client.Opponent.Id}");
-                    {
-                        Vector3 position = new Vector3();
-                        int x = 0;
-                        int y = 0;
-                        int z = 0;
-                        Console.WriteLine("Quelle est la coordonnee x (0,1 ou 2) de la position que vous voulez jouer ? (La couche)");
-                        x = (int.Parse(Console.ReadLine()));
-                        position.X = x;
-                        Console.WriteLine("Quelle est la coordonnee y (0,1 ou 2) de la position que vous voulez jouer ? (la ligne) ");
-                        y = (int.Parse(Console.ReadLine()));
-                        position.Y = y;
-                        Console.WriteLine("Quelle est la coordonnee z (0,1 ou 2) de la position que vous voulez jouer ? (la colonne)");
-                        z = (int.Parse(Console.ReadLine()));
-                        position.Z = z;
-                        Messaging.SendPositionPlayer(my_client.Stream, position);
-                    }
+                    Vector3 position = new Vector3();
+                    int x = 0;
+                    int y = 0;
+                    int z = 0;
+                    Console.WriteLine("Quelle est la coordonnee x (0,1 ou 2) de la position que vous voulez jouer ? (La couche)");
+                    x = (int.Parse(Console.ReadLine()));
+                    position.X = x;
+                    Console.WriteLine("Quelle est la coordonnee y (0,1 ou 2) de la position que vous voulez jouer ? (la ligne) ");
+                    y = (int.Parse(Console.ReadLine()));
+                    position.Y = y;
+                    Console.WriteLine("Quelle est la coordonnee z (0,1 ou 2) de la position que vous voulez jouer ? (la colonne)");
+                    z = (int.Parse(Console.ReadLine()));
+                    position.Z = z;
+                    Messaging.SendPositionPlayer(my_client.Stream, position);
                 }
                 else
                 {
