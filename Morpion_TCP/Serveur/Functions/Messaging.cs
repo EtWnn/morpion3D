@@ -186,7 +186,8 @@ namespace Serveur.Functions
                 Console.WriteLine($"La longueur du msg envoyé à {idRecipient} est {msg.Length}");
                 userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
 
-                Game game = new Game(idSender, idRecipient);
+                Game game = new Game();
+                game.SpecifyPlayersID(idSender, idRecipient);
                 Console.WriteLine($"l'id du player 1 est : {game.IdPlayer1}");
                 Console.WriteLine($"l'id du player 2 est : {game.IdPlayer2}");
                 userHandler.Game = game;

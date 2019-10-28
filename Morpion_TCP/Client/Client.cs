@@ -156,7 +156,7 @@ namespace MyClient
         {
             Console.WriteLine($">>Voici le plateau du jeu");
             GameBoard.display(this.GameClient.GameBoardMatrix); //ajouter une exception
-            /*if ((this.GameClient.Mode == GameMode.Player1 && this.GameClient.IdPlayer1 != this.Opponent.Id)|| (this.GameClient.Mode == GameMode.Player2 && this.GameClient.IdPlayer2 != this.Opponent.Id))
+            if ((this.GameClient.Mode == GameMode.Player1 && this.GameClient.IdPlayer1 != this.Opponent.Id)|| (this.GameClient.Mode == GameMode.Player2 && this.GameClient.IdPlayer2 != this.Opponent.Id))
             {
                 Console.WriteLine(">> C'est a votre tour de jouer");
             }
@@ -171,7 +171,7 @@ namespace MyClient
             else
             {
                 Console.WriteLine(">> Ce n'est pas a votre tour de jouer");
-            }*/
+            }
         }
 
         static void Main(string[] args)

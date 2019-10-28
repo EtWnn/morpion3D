@@ -44,17 +44,16 @@ namespace Serveur.ModelGame
         private const int GAMEBOARDSIZE = 3; // Dimension du plateau
         private List<Vector3> PlayedPositionsPlayer1 = new List<Vector3>();
         private List<Vector3> PlayedPositionsPlayer2 = new List<Vector3>();
-        public int IdPlayer1 { get; }
-        public int IdPlayer2 { get; }
+        public int IdPlayer1 { get; set; }
+        public int IdPlayer2 { get; set; }
 
         // Constructeur par defaut sans parametres pour le serializeur XML
         public Game()
         {
-            Random rnd = new Random();
             GameBoardMatrix = GameBoard.gameBoardGeneration(GAMEBOARDSIZE);
             Mode = GameMode.Player1;
         }
-        public Game( int idClient1, int idClient2 )
+        /*public Game( int idClient1, int idClient2 )
         {
             Random rnd = new Random();
             GameBoardMatrix = GameBoard.gameBoardGeneration(GAMEBOARDSIZE);
@@ -70,6 +69,22 @@ namespace Serveur.ModelGame
                 IdPlayer2 = idClient1;
             }
             
+        }*/
+
+        public void SpecifyPlayersID(int idClient1, int idClient2)
+        {
+            Random rnd = new Random();
+
+            if (rnd.Next(0, 2) < 1)
+            {
+                IdPlayer1 = idClient1;
+                IdPlayer2 = idClient2;
+            }
+            else
+            {
+                IdPlayer1 = idClient2;
+                IdPlayer2 = idClient1;
+            }
         }
 
         private bool CanPlay(int idCLient)

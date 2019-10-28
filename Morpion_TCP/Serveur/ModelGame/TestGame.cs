@@ -7,7 +7,8 @@ namespace Serveur.ModelGame
     {
         public static void LaunchGame2Players()
         {
-            Game match1 = new Game(0,1);
+            Game match1 = new Game();
+            match1.SpecifyPlayersID(0, 1);
             Vector3 position = new Vector3();
             int x = 0;
             int y = 0;
@@ -37,7 +38,8 @@ namespace Serveur.ModelGame
         public static void LaunchRandomGameStepByStep()
         {
             Random rnd = new Random();
-            Game match1 = new Game(-1,-1);
+            Game match1 = new Game();
+            match1.SpecifyPlayersID(0, 1);
             Vector3 position = new Vector3();
             while (!match1.EndGame)
             {
@@ -63,7 +65,8 @@ namespace Serveur.ModelGame
         public static void LaunchRandomGameShowFinalState()
         {
             Random rnd = new Random();
-            Game match1 = new Game(-1,-1);
+            Game match1 = new Game();
+            match1.SpecifyPlayersID(0, 1);
             Vector3 position = new Vector3();
             while (!match1.EndGame)
             {
@@ -85,7 +88,8 @@ namespace Serveur.ModelGame
         public static bool GamePlayer1Win()
         {
             bool test = true;
-            Game match1 = new Game(1,2);
+            Game match1 = new Game();
+            match1.SpecifyPlayersID(0, 1);
             Vector3 position = new Vector3();
             // Player 1 plays
             position.X = 1;
@@ -129,8 +133,10 @@ namespace Serveur.ModelGame
         public static void RandomGameWithSerializationOfOneGameStatus(int numberRoundSerialization)
         {
             Random rnd = new Random();
-            Game match1 = new Game(1,2);
-            Game match2 = new Game(3,4);
+            Game match1 = new Game();
+            match1.SpecifyPlayersID(0, 1);
+            Game match2 = new Game();
+            match2.SpecifyPlayersID(3, 4);
             Vector3 position = new Vector3();
             int compt = 0;
             bool Match2Created = false;
