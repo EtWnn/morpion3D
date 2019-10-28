@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace MyClient.Models
 {
-    
+
     public class User
     {
-        public int Id {get; set;}
+        public int Id { get; set; }
         public string UserName { get; set; }
 
         public User(int id, string username)

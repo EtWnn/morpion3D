@@ -4,11 +4,14 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+using System.Xml;
+
 
 namespace regleJeu
 {
     // L'etat d'une case du morpion
-    enum Case
+    public enum Case
     {
         Vide = 0,
         MotifJoueur1 = 1,
@@ -17,19 +20,32 @@ namespace regleJeu
         SurbrillanceJoueur2 = 4
     };
 
-    enum ModeJeu
+    public enum ModeJeu
     {
         Joueur1,
         Joueur2,
+        Player1Won,
+        Player2Won,
+        NoneWon,
     }
 
-    class Match
+    [Serializable]
+    public class Match
     {
      
         public ModeJeu Mode { get; set; } //Joueur qui peut jouer 
-        public int[,,] MatricePlateau { get; set; } //La matrice du plateau
         public bool FinJeu { get; set; } = false; //booleen pour declarer la fin de la partie
 
+        [XmlIgnore]
+        public int[,,] MatricePlateau { get; set; } //La matrice du plateau
+
+        [XmlArray("MatricePlateau")]
+        public int[] MatricePlateauDto 
+        { 
+        get { return Plateau.Flatten(MatricePlateau, TAILLEPLATEAU); }
+        set { MatricePlateau = Plateau.Expand(value, TAILLEPLATEAU); }
+        }
+        
         private const int TAILLEPLATEAU = 3; // Dimension du plateau
         private List<Vector3> PositionsJoueesJoueur1 { get; set; } = new List<Vector3>();
         private List<Vector3> PositionsJoueesJoueur2 { get; set; } = new List<Vector3>();
@@ -65,13 +81,17 @@ namespace regleJeu
                 // a definir
             }
         }
+
         private void CalculFinJeu()
         {
-            if (PositionsJoueesJoueur1.Count + PositionsJoueesJoueur2.Count == TAILLEPLATEAU * TAILLEPLATEAU)
+            if (PositionsJoueesJoueur1.Count + PositionsJoueesJoueur2.Count == TAILLEPLATEAU * TAILLEPLATEAU * TAILLEPLATEAU)
             {
+                Console.WriteLine("fin fin a cause du calcul fin jeu");
                 FinJeu = true;
+                Mode = ModeJeu.NoneWon;
             }
         }
+
         private List<Vector3> CombinaisonGagnante( Vector3 nouvellePosition)
         {
             bool combinaisonGagnante = false;
@@ -109,13 +129,15 @@ namespace regleJeu
             }
             return listePositionsGagnantes;
         }
+
         private void PlacerJeton(Vector3 position, bool combinaisonGagnante)
         {
-            if (Mode == ModeJeu.Joueur1)
+            if (Mode == ModeJeu.Joueur1 ||Mode == ModeJeu.Player1Won)
             {
                 if (combinaisonGagnante)
                 {
                     MatricePlateau[(int)position.X, (int)position.Y, (int)position.Z] = (int)Case.SurbrillanceJoueur1;
+                    Mode = ModeJeu.Player1Won;
                 }
                 else
                 {
@@ -124,11 +146,12 @@ namespace regleJeu
                 }
                 PositionsJoueesJoueur1.Add(position);
             }
-            else if (Mode == ModeJeu.Joueur2)
+            else if (Mode == ModeJeu.Joueur2||Mode == ModeJeu.Player2Won)
             {
                 if (combinaisonGagnante)
                 {
                     MatricePlateau[(int)position.X, (int)position.Y, (int)position.Z] = (int)Case.SurbrillanceJoueur2;
+                    Mode = ModeJeu.Player2Won;
                 }
                 else
                 {
@@ -138,6 +161,7 @@ namespace regleJeu
                 PositionsJoueesJoueur2.Add(position);
             }
         }
+
         private Boolean Alignement(Vector3 point1, Vector3 point2, Vector3 point3)
         {
             Boolean aGagne = false;
@@ -152,23 +176,6 @@ namespace regleJeu
             return aGagne;
         }
 
-        public void afficher(int[,,] tab)
-        {
-            string aff = "";
-            for (int x = 0; x < TAILLEPLATEAU; x++)
-            {
-                for (int y = 0; y < TAILLEPLATEAU; y++)
-                {
-                    for (int z = 0; z < TAILLEPLATEAU; z++)
-                    {
-                        aff += tab[x, y, z].ToString() + '\t';
-                    }
-                    aff += '\n';
-                }
-                aff += "\n\n";
-            }
-            Console.WriteLine(aff);
-        }
-
+        
     }
 }
