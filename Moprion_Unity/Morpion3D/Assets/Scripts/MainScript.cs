@@ -43,6 +43,7 @@ public class MainScript : MonoBehaviour
 
     private Dictionary<object, bool> gameReadyEventsState;
 
+
     private void Awake()
     {
         State = EState.Default;
