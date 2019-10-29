@@ -11,51 +11,63 @@ namespace Serveur.Models
 {
     public class UserHandler
     {
-        private static Mutex mutex = new Mutex();
-        private static Dictionary<int, UserHandler> userHandlers = new Dictionary<int, UserHandler> { };
-        public static Dictionary<int, UserHandler> UsersHandlers
-        {
-            get
-            {
-                mutex.WaitOne();
-                Dictionary<int, UserHandler> userHandlers_copy = new Dictionary<int, UserHandler>(userHandlers);
-                mutex.ReleaseMutex();
-                return userHandlers_copy;
-                
-            }
-        }
-        private static int next_id = 0;
-
         private static Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>> methods = new Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>>();
-
         public static void InnitMethods()
         {
             methods[NomCommande.MSG] = Messaging.RecieveMessage;
             methods[NomCommande.USN] = Messaging.RecieveUserName;
             methods[NomCommande.OUS] = Messaging.SendOtherUsers;
+            methods[NomCommande.NPP] = Messaging.ReceivePositionPlayed;
+            methods[NomCommande.DGB] = Messaging.SendGameBoard;
+            methods[NomCommande.MRQ] = Messaging.TransferMatchRequest;
+            methods[NomCommande.GRR] = Messaging.TransferGameRequestResponse;
         }
+
+
+        private Mutex usersMutex = new Mutex();
+        private Dictionary<int, UserHandler> userHandlers;
+        public Dictionary<int, UserHandler> UsersHandlers
+        {
+            set
+            {
+                usersMutex.WaitOne();
+                userHandlers = value;
+                usersMutex.ReleaseMutex();
+            }
+            get
+            {
+                usersMutex.WaitOne();
+                Dictionary<int, UserHandler> userHandlers_copy = new Dictionary<int, UserHandler>(userHandlers);
+                usersMutex.ReleaseMutex();
+                return userHandlers_copy;
+                
+            }
+        }
+        
+
+        
+        
 
 
         public int Id { get; private set; }
         public string UserName { get; set; }
+        public NetworkStream stream;
         public TcpClient clientSocket { get; set; }
+        public ModelGame.Game Game { get; set; } 
 
-        public UserHandler(TcpClient inClientSocket)
+        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex)
         {
             this.clientSocket = inClientSocket;
-            this.UserName = "default_" + next_id.ToString();
-            this.Id = next_id;
+            this.UserName = "default_" + id.ToString();
+            this.Id = id;
+            this.Game = null;
+            this.UsersHandlers = userHandlers;
+            this.usersMutex = usersMutex;
 
-            mutex.WaitOne();
-            userHandlers[this.Id] = this; //on stocke le nouvel utilisateur dans le dictionnaire static users
-            userHandlers[this.Id].Start(); //on lance le canal de communication avec le nouvel utilisateur
-            mutex.ReleaseMutex();
-
-            Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {this.Id}");
-            next_id++;
+            
         }
 
-        private void Start()
+        public void Start()
         {
             Thread ctThread = new Thread(DoChat);
             ctThread.Start();
@@ -64,8 +76,8 @@ namespace Serveur.Models
         private void DoChat()
         {
             bool continuer = true;
-            NetworkStream stream = this.clientSocket.GetStream();
-            Messaging.SendMessage(stream, "Hi new user!");
+            stream = this.clientSocket.GetStream();
+            Messaging.SendMessage(stream, "Hi new user! You have been assigned the id " + this.Id.ToString() );
 
             while (continuer)
             {
@@ -80,7 +92,7 @@ namespace Serveur.Models
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
                         int following_length = BitConverter.ToInt16(bytes, 3);
 
-                        //Console.WriteLine($" >> command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
+                        Console.WriteLine($" >> command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
 
                         byte[] following_bytes = new byte[following_length];
                         if(following_length > 0)
@@ -120,6 +132,36 @@ namespace Serveur.Models
             username_bytes.CopyTo(bytes, id_bytes.Length + username_length_bytes.Length);
 
             return bytes;
+        }
+
+        public bool IsAlive()
+        {
+            try
+            {
+                byte[] test = new byte[1];
+                this.stream.Write(test, 0, test.Length);
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            return true;
+            
+            //return this.clientSocket.Client.Poll(01, SelectMode.SelectWrite) && this.clientSocket.Client.Poll(01, SelectMode.SelectRead) && !this.clientSocket.Client.Poll(01, SelectMode.SelectError) ? true : false;
+            /*if(this.clientSocket.Client.Poll(0, SelectMode.SelectRead))
+            {
+                byte[] buff = new byte[1];
+                if (this.clientSocket.Client.Receive(buff, SocketFlags.Peek) == 0)
+                {
+                    // Client disconnected
+                    return false; ;
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }*/
         }
     }
 }
