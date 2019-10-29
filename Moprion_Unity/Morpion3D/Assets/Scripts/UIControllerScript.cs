@@ -11,6 +11,8 @@ public class UIControllerScript : MonoBehaviour
         InMainMenu,
         InOptionsMenu,
         SearchingOpponents,
+        InOpponentsMenu,
+        // MatchRequest ??
     }
 
     private Canvas canvas;
@@ -27,6 +29,9 @@ public class UIControllerScript : MonoBehaviour
     public GameObject OnlineStatusGO;
     public OnlineStatusScript OnlineStatusGOScript { get; private set; }
 
+    public GameObject OpponentsMenuGO;
+    public OpponentsMenuScript OpponentsMenuGOScript { get; private set; }
+    
     public event EventHandler StateChange;
 
     private EStateUI _state;
@@ -45,17 +50,20 @@ public class UIControllerScript : MonoBehaviour
         OptionsMenuGO = Instantiate(OptionsMenuGO, canvas.transform);
         SearchOpponentGO = Instantiate(SearchOpponentGO, canvas.transform);
         OnlineStatusGO = Instantiate(OnlineStatusGO, canvas.transform);
+        OpponentsMenuGO = Instantiate(OpponentsMenuGO, canvas.transform);
 
         MainMenuGOScript = MainMenuGO.GetComponent<MainMenuScript>();
         OptionsMenuGOScript = OptionsMenuGO.GetComponent<OptionsMenuScript>();
         SearchOpponentGOScript = SearchOpponentGO.GetComponent<SearchOpponentPopupScript>();
         OnlineStatusGOScript = OnlineStatusGO.GetComponent<OnlineStatusScript>();
+        OpponentsMenuGOScript = OpponentsMenuGO.GetComponent<OpponentsMenuScript>();
 
         StateChange += MainMenuGOScript.OnMenuStateChange;
         StateChange += OptionsMenuGOScript.OnMenuStateChange;
         StateChange += SearchOpponentGOScript.OnMenuStateChange;
+        StateChange += OpponentsMenuGOScript.OnMenuStateChange;
 
-        MainMenuGOScript.StartButton.onClick.AddListener(() => State = EStateUI.SearchingOpponents);
+        MainMenuGOScript.StartButton.onClick.AddListener(() => State = EStateUI.InOpponentsMenu);
         MainMenuGOScript.OptionsButton.onClick.AddListener(() => State = EStateUI.InOptionsMenu);
         MainMenuGOScript.QuitButton.onClick.AddListener(() => Application.Quit(0));
         OptionsMenuGOScript.BackButton.onClick.AddListener(() => State = EStateUI.InMainMenu);

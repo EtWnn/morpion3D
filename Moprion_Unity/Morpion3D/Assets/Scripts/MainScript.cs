@@ -40,8 +40,9 @@ public class MainScript : MonoBehaviour
     public GameObject UIControllerPrefab;
     private UIControllerScript uiControllerScript;
 
-
     private Dictionary<object, bool> gameReadyEventsState;
+
+    // Client client;
 
     private void Awake()
     {
@@ -49,6 +50,7 @@ public class MainScript : MonoBehaviour
         CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         GridPrefab = Instantiate(GridPrefab, transform);
         UIControllerPrefab = Instantiate(UIControllerPrefab, transform);
+        // client = new Client();
     }
 
     // Start is called before the first frame update
@@ -67,6 +69,9 @@ public class MainScript : MonoBehaviour
         gameReadyEventsState = new Dictionary<object, bool>();
         gameReadyEventsState.Add(gridScript, false);
         gameReadyEventsState.Add(cameraScript, false);
+
+        //client.ConnectionEvent += uiControllerScript.OnlineStatusGOScript.OnConnected;
+        //client.DisconnectionEvent += uiControllerScript.OnlineStatusGOScript.OnDisconnected;
 
         State = EState.InMainMenu;
     }

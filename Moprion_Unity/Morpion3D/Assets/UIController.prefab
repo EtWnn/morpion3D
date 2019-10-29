@@ -119,7 +119,8 @@ MonoBehaviour:
     type: 3}
   OnlineStatusGO: {fileID: 4971978579796871749, guid: e5aefdaf0e5091346bf11a7b589877ac,
     type: 3}
-  State: 0
+  OpponentsMenuGO: {fileID: 2913002362178613787, guid: 178bc449837805f4fa70a39a32cecf35,
+    type: 3}
 --- !u!1 &7576305211203238777
 GameObject:
   m_ObjectHideFlags: 0

@@ -44,7 +44,7 @@ public class OnlineStatusScript : MonoBehaviour
         State = EState.Online;
     }
 
-    public void OnDisconnect(object sender, EventArgs e)
+    public void OnDisconnected(object sender, EventArgs e)
     {
         State = EState.Offline;
     }
