@@ -7,7 +7,6 @@ public enum EState
 {
     Default,
     InMainMenu,
-    InOptionsMenu,
     ToMenu,
     InGame,
     InGameMenu,
@@ -38,7 +37,7 @@ public class MainScript : MonoBehaviour
     private GridScript gridScript;
 
     public GameObject UIControllerPrefab;
-    private UIControllerScript uiControllerScript;
+    private UIController uiControllerScript;
 
     private Dictionary<object, bool> gameReadyEventsState;
 
@@ -57,11 +56,14 @@ public class MainScript : MonoBehaviour
     void Start()
     {
         cameraScript = CameraHandlerPrefab.GetComponent<CameraScript>();
-        uiControllerScript = UIControllerPrefab.GetComponent<UIControllerScript>();
+        uiControllerScript = UIControllerPrefab.GetComponent<UIController>();
         gridScript = GridPrefab.GetComponent<GridScript>();
 
         StateChange += cameraScript.OnStateChange;
         StateChange += gridScript.OnStateChange;
+        StateChange += uiControllerScript.OnMainStateChange;
+
+        uiControllerScript.ReadyToGame += (sender, e) => State = EState.ToGame;
 
         cameraScript.ReadyGame += OnGameReadyEvents;
         gridScript.ReadyGame += OnGameReadyEvents;

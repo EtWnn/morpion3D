@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 05ad5ed0de6ebff42a19448e73e8a234
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - MainMenuGO: {fileID: 7824362026882211614, guid: 83eb1d59f15e10744b80023d643250df,
+      type: 3}
+  - OptionsMenuGO: {fileID: 1754027593837496022, guid: 8de042d76fb19c04c932751721190ed3,
+      type: 3}
+  - SearchOpponentGO: {fileID: 1942317634910689710, guid: 419710e19ef82604193ae1922ba4d78c,
+      type: 3}
+  - OnlineStatusGO: {fileID: 4971978579796871749, guid: e5aefdaf0e5091346bf11a7b589877ac,
+      type: 3}
+  - OpponentsMenuGO: {fileID: 2913002362178613787, guid: 178bc449837805f4fa70a39a32cecf35,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

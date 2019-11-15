@@ -48,9 +48,6 @@ public class GridScript : MonoBehaviour
             case EState.InMainMenu:
                 updateFunction = NotInGameBehaviour;
                 break;
-            case EState.InOptionsMenu:
-                updateFunction = NotInGameBehaviour;
-                break;
             case EState.ToMenu:
                 updateFunction = NotInGameBehaviour;
                 break;
