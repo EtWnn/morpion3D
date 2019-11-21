@@ -35,6 +35,7 @@ namespace MyClient
         public Game GameClient = null;
 
         private static Dictionary<NomCommande, Action<byte[], MyClient>> methods = new Dictionary<NomCommande, Action<byte[], MyClient>>();
+
         public static void InnitMethods()
         {
             methods[NomCommande.OUS] = Messaging.RecieveOtherUsers;
@@ -131,8 +132,6 @@ namespace MyClient
                 }
             }
         }
-
-
 
         void DisplayOtherUser()
         {

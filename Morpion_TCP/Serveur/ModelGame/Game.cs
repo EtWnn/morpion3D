@@ -101,7 +101,7 @@ namespace Serveur.ModelGame
         }
 
         //Methode pour mettre a jour le morpion en fonction de l'action d un joueur
-        public void Play(Vector3 playedPosition, int idClient)
+        public bool Play(Vector3 playedPosition, int idClient)
         {
             if (GameBoardMatrix[(int)playedPosition.X, (int)playedPosition.Y, (int)playedPosition.Z] == (int)Cell.Empty && CanPlay(idClient))
             {
@@ -119,11 +119,11 @@ namespace Serveur.ModelGame
                     }
                 }
                 CalculationEndGame();
+
+                return true;
             }
-            else
-            {
-                // a definir
-            }
+
+            return false;
         }
 
         private void CalculationEndGame()
