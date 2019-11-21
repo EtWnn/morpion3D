@@ -140,7 +140,15 @@ namespace Serveur.Functions
             Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
             Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
             Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
-            userHandler.Game.Play(position, userHandler.Id);
+            if (userHandler.Game.Play(position, userHandler.Id))
+            {
+                //on renvoie la board actualisée
+                byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer1]);
+                userHandler.UsersHandlers[userHandler.Game.IdPlayer1].stream.Write(msg_board1, 0, msg_board1.Length);
+
+                byte[] msg_board2 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer2]);
+                userHandler.UsersHandlers[userHandler.Game.IdPlayer2].stream.Write(msg_board2, 0, msg_board1.Length);
+            }
             Console.WriteLine($"La position a ete jouee");
             Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
             Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
@@ -179,32 +187,34 @@ namespace Serveur.Functions
             int idSender = userHandler.Id;
             Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
             int idRecipient = tuple.Item1;
-            Console.WriteLine($">> idSender = userHandler.Id est {idSender}");
-            Console.WriteLine($">> idRecipient est {idRecipient}");
             bool response = tuple.Item2;
-            byte[] msg = new byte[0];
-            if (response)
-            {
-                byte[] msg_bytes = serializationResponseOpponent(idSender, response);
-                msg = serializationMessage(msg_bytes, NomCommande.RGR);
-                Console.WriteLine($"La longueur du msg envoyé à {idRecipient} est {msg.Length}");
-                userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
 
+            //la réponse est envoyer au destinataire
+            byte[] msg_bytes = serializationResponseOpponent(idSender, response);
+            byte[] msg_to_dest = serializationMessage(msg_bytes, NomCommande.RGR);
+            userHandler.UsersHandlers[idRecipient].stream.Write(msg_to_dest, 0, msg_to_dest.Length);
+
+
+            if (response) //creation de l'objet game
+            {
                 Game game = new Game();
                 game.SpecifyPlayersID(idSender, idRecipient);
-                Console.WriteLine($"l'id du player 1 est : {game.IdPlayer1}");
-                Console.WriteLine($"l'id du player 2 est : {game.IdPlayer2}");
                 userHandler.Game = game;
                 userHandler.UsersHandlers[idRecipient].Game = game;
 
-                msg_bytes = serializationResponseOpponent(idRecipient, response);
-                msg = serializationMessage(msg_bytes, NomCommande.RGR);
-                Console.WriteLine($"La longueur du msg envoyé à {idSender} est {msg.Length}");
+                //on envoie la board au destinataire
+                byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[idRecipient]);
+                userHandler.UsersHandlers[idRecipient].stream.Write(msg_board1, 0, msg_board1.Length);
+
+                //on envoie la board à l'envoyeur
+                byte[] msg_board2 = SendGameBoard(new byte[0], userHandler);
+                userHandler.stream.Write(msg_board2, 0, msg_board2.Length);
+
             }
-            else
-            {
-                
-            }
+
+            
+            msg_bytes = serializationResponseOpponent(idRecipient, response);
+            byte[] msg = serializationMessage(msg_bytes, NomCommande.RGR);
             return msg;
         }
         
