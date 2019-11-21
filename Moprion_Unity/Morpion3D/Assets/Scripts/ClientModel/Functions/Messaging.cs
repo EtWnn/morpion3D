@@ -112,11 +112,7 @@ namespace MyClient.Functions
         }
 
         // General commands
-        public static void RecieveMessage(byte[] bytes)
-        {
-            string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-            Console.WriteLine($" >> message recieved from the serveur: {message}");
-        }
+        
 
         public static void AskOtherUsers(NetworkStream stream)
         {
@@ -143,6 +139,12 @@ namespace MyClient.Functions
             client.RaiseOpponentListUpdated(listUsers);
         }
 
+        // A supprimer - probablement inutile
+        public static void RecieveMessage(byte[] bytes)
+        {
+            string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+            Console.WriteLine($" >> message recieved from the serveur: {message}");
+        }
         public static void SendMessage(NetworkStream stream, string message)
         {
             byte[] msg = serializationMessage(message, NomCommande.MSG);
@@ -192,7 +194,6 @@ namespace MyClient.Functions
             client.RaiseMatchRequestUpdated(new MatchRequestEventArgs(user, MatchRequestEventArgs.EStatus.New));
         }
 
-        // ADD new command for response to game request (with updating of the dictionary)
         public static void SendGameRequestResponse(NetworkStream stream, Client client, int idOpponent, bool response)
         {
             AskOtherUsers(stream); //probablement a supprimer maintenant que le dictionnaire connected_users est mis a jour lors de l'appel de la methode RecieveGameRequest
@@ -222,6 +223,7 @@ namespace MyClient.Functions
                 client.gameRequestsRecieved.Remove(idOpponent);
             }
         }
+
 
         // In-game commands
         public static void SendPositionPlayer(NetworkStream stream, Vector3 position)
