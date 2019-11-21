@@ -113,10 +113,17 @@ namespace Serveur.Models
 
                     
                 }
-                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
+                catch (System.Net.Sockets.SocketException ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
                 {
                     continuer = false;
-                    Console.WriteLine(" >> " + ex.ToString());
+                    Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
+
+                    if(Game != null) //si le joueur était en jeu
+                    {
+                        // à faire: prévenir l'autre joueur
+
+                        Game = null;
+                    }
                 }
             }
 
@@ -143,27 +150,11 @@ namespace Serveur.Models
                 byte[] test = new byte[1];
                 this.stream.Write(test, 0, test.Length);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
             return true;
-            
-            //return this.clientSocket.Client.Poll(01, SelectMode.SelectWrite) && this.clientSocket.Client.Poll(01, SelectMode.SelectRead) && !this.clientSocket.Client.Poll(01, SelectMode.SelectError) ? true : false;
-            /*if(this.clientSocket.Client.Poll(0, SelectMode.SelectRead))
-            {
-                byte[] buff = new byte[1];
-                if (this.clientSocket.Client.Receive(buff, SocketFlags.Peek) == 0)
-                {
-                    // Client disconnected
-                    return false; ;
-                }
-                return true;
-            }
-            else
-            {
-                return false;
-            }*/
         }
     }
 }

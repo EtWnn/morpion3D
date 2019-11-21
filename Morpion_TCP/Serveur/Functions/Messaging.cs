@@ -170,16 +170,31 @@ namespace Serveur.Functions
 
         public static byte[] TransferMatchRequest(byte[] bytes, UserHandler userHandler)
         {
-            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest bytes.Lenght : {bytes.Length}");
             int idRecipient = BitConverter.ToInt16(bytes, 0);
-            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest idRecipient : {idRecipient}");
             int idSender = userHandler.Id;
-            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest idSender : {idSender}");
+
+            Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest from {idSender} to {idRecipient}");
             string userNameSender = userHandler.UserName;
-            byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
-            byte[] msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
-            userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
-            return new byte[0];
+
+            byte[] msg = new byte[0];
+
+            if(userHandler.UsersHandlers.ContainsKey(idRecipient) && userHandler.UsersHandlers[idRecipient] == null)
+            {
+                byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
+                byte[] request_msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
+                userHandler.UsersHandlers[idRecipient].stream.Write(request_msg, 0, request_msg.Length);
+            }
+            else
+            {
+                // on rempli msg d'un refus de requête
+                byte[] msg_bytes = serializationResponseOpponent(idRecipient, false);
+                msg = serializationMessage(msg_bytes, NomCommande.RGR);
+
+                Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest the key {idRecipient} was not found or the user was in a match");
+            }
+            
+
+            return msg;
         }
 
         public static byte[] TransferGameRequestResponse(byte[] bytes, UserHandler userHandler)
