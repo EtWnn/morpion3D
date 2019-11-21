@@ -242,6 +242,7 @@ namespace MyClient.Functions
         {
             Console.WriteLine($"GameBoard recue");
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
+
         }
     }
 }

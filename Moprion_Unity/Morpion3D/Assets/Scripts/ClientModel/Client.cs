@@ -26,6 +26,10 @@ namespace MyClient
         public NetworkStream Stream = null;
 
         public event EventHandler Connected;
+        public event EventHandler Disconnected;
+        public event EventHandler GameUpdated;
+
+
         public bool is_connected = false;
 
 
@@ -35,7 +39,17 @@ namespace MyClient
 
         public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
         public User Opponent = null;
-        public Game GameClient = null;
+        
+        private Game _GameClient = null;
+        public Game GameClient
+        {
+            get => _GameClient;
+            private set
+            {
+                _GameClient = value;
+                GameUpdated?.Invoke(this, EventArgs.Empty);
+            }
+        }
 
         private static Dictionary<NomCommande, Action<byte[], Client>> methods = new Dictionary<NomCommande, Action<byte[], Client>>();
         public static void InnitMethods()
@@ -80,7 +94,7 @@ namespace MyClient
                 this._socket.Disconnect(false);
 
                 is_connected = false;
-                Connected?.Invoke(this, EventArgs.Empty);
+                Disconnected?.Invoke(this, EventArgs.Empty);
             }
         }
 
