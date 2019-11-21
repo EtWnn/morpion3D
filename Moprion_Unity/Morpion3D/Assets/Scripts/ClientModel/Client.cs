@@ -28,6 +28,7 @@ namespace MyClient
         public event EventHandler Connected;
         public event EventHandler Disconnected;
         public event EventHandler GameUpdated;
+        public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
 
 
         public bool is_connected = false;
@@ -44,7 +45,7 @@ namespace MyClient
         public Game GameClient
         {
             get => _GameClient;
-            private set
+            set
             {
                 _GameClient = value;
                 GameUpdated?.Invoke(this, EventArgs.Empty);
@@ -195,7 +196,46 @@ namespace MyClient
             }
         }
 
-        static void Main(string[] args)
+        internal void RaiseMatchRequestUpdated(MatchRequestEventArgs matchRequestEventArgs)
+        {
+            var handler = MatchRequestUpdated;
+            if (handler != null)
+                handler(this, matchRequestEventArgs);
+        }
+
+        public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e)
+        {
+            switch (e.Status)
+            {
+                case MatchRequestEventArgs.EStatus.New:
+                    Messaging.RequestMatch(Stream, e.User.Id);
+                    break;
+                case MatchRequestEventArgs.EStatus.Canceled:
+                    // a coder nice to have
+                    break;
+                case MatchRequestEventArgs.EStatus.Accepted:
+                    Messaging.SendGameRequestResponse(Stream, this, e.User.Id, true);
+                    break;
+                case MatchRequestEventArgs.EStatus.Declined:
+                    Messaging.SendGameRequestResponse(Stream, this, e.User.Id, false);
+                    break;
+                case MatchRequestEventArgs.EStatus.CannotBeReached:
+                    // nice to have
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
+        public void OnPositionPlayed(object sender, TEventArgs<Vector3> e)
+        {
+            var vec = e.Data;
+            Messaging.SendPositionPlayer(Stream, vec);
+        }
+
+        // A supprimer
+        /*static void Main(string[] args)
         {
             Client my_client = new Client();
             Client.InnitMethods();
@@ -320,7 +360,7 @@ namespace MyClient
 
             }
 
-        }
+        }*/
 
         
     }

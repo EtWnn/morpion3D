@@ -166,17 +166,13 @@ namespace MyClient.Functions
             Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
             int idOpponent = tuple.Item1;
             bool response = tuple.Item2;
+            var user = client.connected_users[idOpponent];
             if (response)
             {
-                Console.WriteLine($">> l'identifiant de l'adversaire est {idOpponent}");
-                Console.WriteLine($">> le dictionnaire client.connected_users est :");
-                foreach (int key in client.connected_users.Keys)
-                {
-                    Console.WriteLine($"la clef est {key}");
-                    client.connected_users[key].Display();
-                }
-                client.Opponent = client.connected_users[idOpponent];
+                client.Opponent = user;
             }
+            var status = response ? MatchRequestEventArgs.EStatus.Accepted : MatchRequestEventArgs.EStatus.Canceled;
+            client.RaiseMatchRequestUpdated(new MatchRequestEventArgs(user, status));
         }
 
         public static void RecieveGameRequest(byte[] bytes, Client client)
@@ -185,11 +181,13 @@ namespace MyClient.Functions
             int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
             int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
             string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
+            User user = new User(user_id, userName);
             if (!(client.connected_users.ContainsKey(user_id)))
             {
-                client.connected_users[user_id]= new User(user_id, userName);
+                client.connected_users[user_id]= user;
             }
-            client.gameRequestsRecieved[user_id] = new User(user_id, userName);
+            client.gameRequestsRecieved[user_id] = user;
+            client.RaiseMatchRequestUpdated(new MatchRequestEventArgs(user, MatchRequestEventArgs.EStatus.New));
         }
 
         // ADD new command for response to game request (with updating of the dictionary)
@@ -203,7 +201,6 @@ namespace MyClient.Functions
                 stream.Write(bytes, 0, bytes.Length);
                 foreach (var key in client.connected_users.Keys)
                 {
-                    Console.WriteLine($"le dictionnaire client.connected_users contient l'id {key} en clef");
                     client.connected_users[key].Display();
                 }
                 client.Opponent = client.connected_users[idOpponent];
