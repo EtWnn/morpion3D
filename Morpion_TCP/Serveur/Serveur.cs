@@ -167,7 +167,7 @@ namespace Serveur
                     Console.WriteLine($"Voici les {my_serveur.UsersHandlers.Count} utilisateurs en jeu:");
                     foreach (var user in my_serveur.UsersHandlers.Values)
                     {
-                        if (user.IsAlive() & user.Game != null)
+                        if (user.IsAlive() && user.Game != null)
                         {
                             Console.WriteLine($"id {user.Id}, username: {user.UserName}");
                         }
