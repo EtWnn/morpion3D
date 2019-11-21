@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using MyClient;
 
 public enum EState
 {
@@ -41,7 +42,8 @@ public class MainScript : MonoBehaviour
 
     private Dictionary<object, bool> gameReadyEventsState;
 
-    // Client client;
+
+    Client client;
 
     private void Awake()
     {
@@ -49,7 +51,10 @@ public class MainScript : MonoBehaviour
         CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         GridPrefab = Instantiate(GridPrefab, transform);
         UIControllerPrefab = Instantiate(UIControllerPrefab, transform);
-        // client = new Client();
+
+        Client.InnitMethods();
+        client = new Client();
+        
     }
 
     // Start is called before the first frame update

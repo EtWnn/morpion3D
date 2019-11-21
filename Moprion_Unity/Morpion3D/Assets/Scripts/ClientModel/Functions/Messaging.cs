@@ -16,11 +16,11 @@ namespace MyClient.Functions
         USN, //username
         OUS, //other users
         MRQ, //match request
-        RQS,
         NPP, //New position played 
         DGB, // game board
         GRR, // request response
-        RGR, // recieve game request
+        RGR // recieve game request
+        //RQS, //
 
     }
 
@@ -45,6 +45,7 @@ namespace MyClient.Functions
             //renvoie le tableau de bytes
             return msg;
         }
+
         private static byte[] serializationMessage(string message, NomCommande nomCommande)
         {
             //command in bytes
@@ -67,6 +68,7 @@ namespace MyClient.Functions
             //renvoie le tableau de bytes
             return msg;
         }
+
         private static byte[] serializationMessage(byte[] message_bytes, NomCommande nomCommande)
         {
             //command in bytes
@@ -86,6 +88,7 @@ namespace MyClient.Functions
             //renvoie le tableau de bytes
             return msg;
         }
+
         private static byte[] serializationResponseOpponent(int idOpponent, bool response)
         {
             byte[] idOpponent_bytes = BitConverter.GetBytes((Int16)idOpponent);
@@ -95,6 +98,7 @@ namespace MyClient.Functions
             response_bytes.CopyTo(message, idOpponent_bytes.Length);
             return message;
         }
+
         private static Tuple<int, bool> deserializationResponseOpponent(byte[] bytes)
         {
             int byte_compt = 0;
@@ -102,6 +106,7 @@ namespace MyClient.Functions
             bool response = BitConverter.ToBoolean(bytes, byte_compt);
             return Tuple.Create(idOpponent, response);
         }
+
         private static User deserializationReceiveGameRequest(byte[] bytes)
         {
             int byte_compt = 0;
@@ -113,7 +118,6 @@ namespace MyClient.Functions
 
         // General commands
         
-
         public static void AskOtherUsers(NetworkStream stream)
         {
             byte[] msg = serializationMessage(NomCommande.OUS);
@@ -123,7 +127,6 @@ namespace MyClient.Functions
         public static void RecieveOtherUsers(byte[] bytes, Client client)
         {
             int n_users = BitConverter.ToInt16(bytes, 0);
-            //Console.WriteLine($"I recieved {n_users} users");
             client.connected_users = new Dictionary<int, User>();
             int byte_compt = 2;
             List<User> listUsers = new List<User>();
@@ -137,18 +140,6 @@ namespace MyClient.Functions
                 listUsers.Add(user);
             }
             client.RaiseOpponentListUpdated(listUsers);
-        }
-
-        // A supprimer - probablement inutile
-        public static void RecieveMessage(byte[] bytes)
-        {
-            string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-            Console.WriteLine($" >> message recieved from the serveur: {message}");
-        }
-        public static void SendMessage(NetworkStream stream, string message)
-        {
-            byte[] msg = serializationMessage(message, NomCommande.MSG);
-            stream.Write(msg, 0, msg.Length);
         }
 
         public static void SendUserName(NetworkStream stream, string userName)
@@ -202,10 +193,7 @@ namespace MyClient.Functions
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
                 stream.Write(bytes, 0, bytes.Length);
-                foreach (var key in client.connected_users.Keys)
-                {
-                    client.connected_users[key].Display();
-                }
+
                 client.Opponent = client.connected_users[idOpponent];
                 client.gameRequestsRecieved.Remove(idOpponent);
                 var itemsToRemove = client.gameRequestsRecieved.ToArray();
@@ -241,9 +229,7 @@ namespace MyClient.Functions
 
         public static void RecieveGameBoard(byte[] bytes, Client client)
         {
-            Console.WriteLine($"GameBoard recue");
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
-
         }
     }
 }
