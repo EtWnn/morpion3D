@@ -21,7 +21,8 @@ public class UIController : MonoBehaviour
     public OpponentsMenu OpponentsMenu { get; private set; }
     public OptionsMenu OptionsMenu { get; private set; }
     public PopupPanel PopupPanel { get; private set; }
-    
+    public TurnIndicator TurnIndicator { get; private set; }
+
     public event EventHandler ReadyToGame;
     public event EventHandler StateChange;
 
@@ -33,7 +34,7 @@ public class UIController : MonoBehaviour
     }
 
     private Canvas canvas;
-
+    private GameObject GameCommandsOverlay;
     // Start is called before the first frame update
     void Awake()
     {
@@ -45,6 +46,8 @@ public class UIController : MonoBehaviour
         OnlineStatusOverlay = transform.Find("Canvas/OnlineStatusGO").GetComponent<OnlineStatusOverlay>();
         OpponentsMenu = transform.Find("Canvas/OpponentsMenuGO").GetComponent<OpponentsMenu>();
         PopupPanel = transform.Find("Canvas/PopupPanel").GetComponent<PopupPanel>();
+        TurnIndicator = transform.Find("Canvas/TurnIndicator").GetComponent<TurnIndicator>();
+        GameCommandsOverlay = transform.Find("Canvas/GameCommandsOverlay").gameObject;
     }
 
     private void Start()
@@ -68,13 +71,22 @@ public class UIController : MonoBehaviour
     public void OnMainStateChange(object sender, EventArgs e)
     {
         var ms = sender as MainScript;
-        if(ms && ms.State == EState.InMainMenu)
+        if (ms && ms.State == EState.InMainMenu)
             State = EStateUI.InMainMenu;
         else
             State = EStateUI.Default;
+
+        GameCommandsOverlay.SetActive(ms && ms.State == EState.InGame);
+        TurnIndicator.SetActive(ms && ms.State == EState.InGame);
+
     }
 
     private void OnSubMenuExiting(object sender, EventArgs e) => State = EStateUI.InMainMenu;
+
+    public void OnGameTurnChanged(object sender, TEventArgs<bool> e)
+    {
+        TurnIndicator.SetTurn(e.Data);
+    }
 
     ///// Event wrappers /////
 

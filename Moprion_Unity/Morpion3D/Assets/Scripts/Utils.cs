@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Collections;
 using UnityEngine;
 
@@ -94,4 +95,99 @@ public class TEventArgs<T> : EventArgs
 public class StringEventArgs: EventArgs
 {
     public string Message { get; set; }
+}
+
+public class SharedUpdatable<T, TResUpdateFunction>
+{
+    public Func<T, TResUpdateFunction> UpdateAction { get; set; }
+    public Action<TResUpdateFunction> FollowUpAction { get; set; }
+    
+    private object lockObject;
+    private T data;
+    private bool upToDate;
+
+    public SharedUpdatable(T value = default)
+    {
+        lockObject = new object();
+        data = value;
+        upToDate = true;
+        UpdateAction = (_) => { return default; };
+        FollowUpAction = (_) => {};
+    }
+
+    virtual public void Write(T value)
+    {
+        lock(lockObject)
+        {
+            data = value;
+            upToDate = false;
+        }
+    }
+
+    virtual public bool TryProcessIfNew()
+    {
+        bool processed = false;
+        TResUpdateFunction updateFunctionResult = default;
+        lock(lockObject)
+        {
+            if (!upToDate)
+            {
+                updateFunctionResult = UpdateAction(data);
+                processed = true;
+                upToDate = false;
+            }
+        }
+
+        if (processed)
+            FollowUpAction(updateFunctionResult);
+
+        return processed;
+    }
+}
+
+public class SharedUpdatable<T>
+{
+    public Action<T> UpdateAction { get; set; }
+    public Action FollowUpAction { get; set; }
+
+    private object lockObject;
+    private T data;
+    private bool upToDate;
+
+    public SharedUpdatable(T value = default)
+    {
+        lockObject = new object();
+        data = value;
+        upToDate = true;
+        UpdateAction = (_) => {};
+        FollowUpAction = () => { };
+    }
+
+    virtual public void Write(T value)
+    {
+        lock (lockObject)
+        {
+            data = value;
+            upToDate = false;
+        }
+    }
+
+    virtual public bool TryProcessIfNew()
+    {
+        bool processed = false;
+        lock (lockObject)
+        {
+            if (!upToDate)
+            {
+                UpdateAction(data);
+                processed = true;
+                upToDate = false;
+            }
+        }
+
+        if (processed)
+            FollowUpAction();
+
+        return processed;
+    }
 }

@@ -6,6 +6,27 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+internal class TestClient
+{
+    public event EventHandler Connected;
+    public event EventHandler Disconnected;
+
+    public void Start()
+    {
+        Thread thread = new Thread(() =>
+        {
+            while(true)
+            {
+                Connected?.Invoke(this, EventArgs.Empty);
+                Thread.Sleep(500);
+                Disconnected?.Invoke(this, EventArgs.Empty);
+                Thread.Sleep(500);
+            }
+        });
+        thread.Start();
+    }
+}
+
 public class OnlineStatusOverlay : MonoBehaviour
 {
     public enum EState
@@ -15,20 +36,7 @@ public class OnlineStatusOverlay : MonoBehaviour
         Online,
     }
 
-    private bool update;
-    private EState _state;
-    public EState State
-    { 
-        get => _state;
-        set
-        {
-            if (value != State)
-            {
-                _state = value;
-                update = true;
-            }
-        }
-    }
+    SharedUpdatable<EState> State;
 
     public Color OfflineColor;
     public Color OnlineColor;
@@ -41,12 +49,12 @@ public class OnlineStatusOverlay : MonoBehaviour
     
     public void OnConnected(object sender, EventArgs e)
     {
-        State = EState.Online;
+        State.Write(EState.Online);
     }
 
     public void OnDisconnected(object sender, EventArgs e)
     {
-        State = EState.Offline;
+        State.Write(EState.Offline);
     }
 
     // Start is called before the first frame update
@@ -63,11 +71,19 @@ public class OnlineStatusOverlay : MonoBehaviour
 
         image.color = OfflineColor;
         text.text = OfflineText;
+
+        State = new SharedUpdatable<EState>(EState.Offline);
+        State.UpdateAction = updateState;
+
+        TestClient client = new TestClient();
+        client.Connected += OnConnected;
+        client.Disconnected += OnDisconnected;
+        client.Start();
     }
 
-    private void updateState()
+    private void updateState(EState state)
     {
-        switch (State)
+        switch (state)
         {
             case EState.Offline:
                 image.color = OfflineColor;
@@ -86,8 +102,7 @@ public class OnlineStatusOverlay : MonoBehaviour
 
     private void Update()
     {
-        if (update)
-            updateState();
+        State.TryProcessIfNew();
     }
 
 }

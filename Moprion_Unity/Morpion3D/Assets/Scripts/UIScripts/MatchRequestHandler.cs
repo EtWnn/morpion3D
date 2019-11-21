@@ -8,12 +8,12 @@ using TMPro;
 
 internal class CientMatchReq
 {
-    public event EventHandler<MatchRequestEventArgs> MatchReqestUpdated;
+    public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
 
     private Thread listeningThread;
 
     public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e)
-    {
+    {  
         switch (e.Status)
         {
             case MatchRequestEventArgs.EStatus.New:
@@ -24,7 +24,7 @@ internal class CientMatchReq
                     try
                     {
                         Thread.Sleep(2000);
-                        MatchReqestUpdated?.Invoke(this, new MatchRequestEventArgs(eCopy.User, MatchRequestEventArgs.EStatus.Accepted));
+                        MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(eCopy.User, MatchRequestEventArgs.EStatus.Accepted));
                     }
                     catch (ThreadInterruptedException)
                     {}
@@ -53,11 +53,11 @@ internal class CientMatchReq
         {
             User opponent = new User(654321, "CeriseDeGroupama");
             Thread.Sleep(msFromStart);
-            MatchReqestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.New));
+            MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.New));
             if (cancelRequest)
             {
                 Thread.Sleep(100);
-                MatchReqestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.Canceled));
+                MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.Canceled));
             }
         });
         th.Start();
@@ -81,9 +81,9 @@ public class MatchRequestEventArgs : EventArgs
     public User User { get; set; }
     public EStatus Status { get; set; }
 
-    public MatchRequestEventArgs(User toUser, EStatus status)
+    public MatchRequestEventArgs(User user, EStatus status)
     {
-        User = toUser;
+        User = user;
         Status = status;
     }
 }
@@ -117,9 +117,9 @@ public class MatchRequestHandler : MonoBehaviour
         UIController.OpponentsMenu.SendingMatchRequest += OnSendingMatchRequest;
         // TODO: replace with real client
         MatchRequestUpdated += client.OnMatchRequestUpdated;
-        client.MatchReqestUpdated += (sender, e) => { MatchRequestInfo = e; update = true; };
+        client.MatchRequestUpdated += (sender, e) => { MatchRequestInfo = e; update = true; };
 
-        client.SimulateRequestFromOpponent(5000);
+        client.SimulateRequestFromOpponent(10000);
     }
 
     private void Update()
@@ -178,6 +178,8 @@ public class MatchRequestHandler : MonoBehaviour
             popup.AcceptButton.onClick.AddListener(() =>
             {
                 popup.StatorAnimation.Interrupt();
+                popup.AcceptButton.interactable = false;
+                popup.DeclineButton.interactable = false;
                 popup.StatorAnimation.StartPulse(Color.green, 0.5f, 4);
                 popup.StatorAnimation.Finished += (sender, e) =>
                 {

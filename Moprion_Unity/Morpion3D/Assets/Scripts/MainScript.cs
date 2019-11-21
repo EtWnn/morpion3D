@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using MyClient;
 
 public enum EState
 {
@@ -41,7 +42,7 @@ public class MainScript : MonoBehaviour
 
     private Dictionary<object, bool> gameReadyEventsState;
 
-    // Client client;
+    Client client;
 
     private void Awake()
     {
@@ -49,7 +50,8 @@ public class MainScript : MonoBehaviour
         CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         GridPrefab = Instantiate(GridPrefab, transform);
         UIControllerPrefab = Instantiate(UIControllerPrefab, transform);
-        // client = new Client();
+        client = new Client();
+        Client.InnitMethods();
     }
 
     // Start is called before the first frame update
@@ -64,6 +66,9 @@ public class MainScript : MonoBehaviour
         StateChange += uiControllerScript.OnMainStateChange;
 
         uiControllerScript.ReadyToGame += (sender, e) => State = EState.ToGame;
+        uiControllerScript.OptionsMenu.PlayerPatternChanged += gridScript.OnPlayerPatternChanged;
+
+        gridScript.PlayerTurn += uiControllerScript.OnGameTurnChanged;
 
         cameraScript.ReadyGame += OnGameReadyEvents;
         gridScript.ReadyGame += OnGameReadyEvents;
@@ -72,8 +77,8 @@ public class MainScript : MonoBehaviour
         gameReadyEventsState.Add(gridScript, false);
         gameReadyEventsState.Add(cameraScript, false);
 
-        //client.ConnectionEvent += uiControllerScript.OnlineStatusGOScript.OnConnected;
-        //client.DisconnectionEvent += uiControllerScript.OnlineStatusGOScript.OnDisconnected;
+        client.Connected += uiControllerScript.OnlineStatusOverlay.OnConnected;
+
 
         State = EState.InMainMenu;
     }

@@ -5,13 +5,14 @@ using UnityEngine;
 public class FaceCamAndRotateScript : MonoBehaviour
 {
     // Start is called before the first frame update
-    public Camera MainCamera { get; private set; }
+    public Camera MainCamera;
     public float RotationSpeed;
     // Update is called once per frame
 
     private void Start()
     {
-        MainCamera = Camera.main;
+        if (MainCamera == null)
+            MainCamera = Camera.main;
         RotationSpeed = 1;
     }
 

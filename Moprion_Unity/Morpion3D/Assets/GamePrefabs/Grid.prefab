@@ -43,8 +43,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79953da9042cd7f4a827363ac6277dbf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TransitionNumRotation: 0
-  TransitionTime: 0
-  RotatationSpeed: 0
   CubeletPrefab: {fileID: 9097258796810206238, guid: 10fa71cad4c9d314e9955239bddb1df5,
     type: 3}
+  CrossPrefab: {fileID: 3031324473766081669, guid: 3693fc174fea8264696ce462c1a65f1d,
+    type: 3}
+  TorePrefab: {fileID: 1501269488972476111, guid: 47c5d35d9277541489717debb6ffc604,
+    type: 3}
+  RotatationSpeed: 0
