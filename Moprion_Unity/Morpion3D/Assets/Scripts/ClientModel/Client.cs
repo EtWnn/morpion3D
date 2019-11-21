@@ -26,6 +26,12 @@ namespace MyClient
         public NetworkStream Stream = null;
 
         public event EventHandler Connected;
+        public event EventHandler Disconnected;
+        public event EventHandler GameUpdated;
+        public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
+        public event EventHandler<TEventArgs<List<User>>> OpponentListUpdated;
+
+
         public bool is_connected = false;
 
 
@@ -35,7 +41,17 @@ namespace MyClient
 
         public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
         public User Opponent = null;
-        public Game GameClient = null;
+        
+        private Game _GameClient = null;
+        public Game GameClient
+        {
+            get => _GameClient;
+            set
+            {
+                _GameClient = value;
+                GameUpdated?.Invoke(this, EventArgs.Empty);
+            }
+        }
 
         private static Dictionary<NomCommande, Action<byte[], Client>> methods = new Dictionary<NomCommande, Action<byte[], Client>>();
         public static void InnitMethods()
@@ -80,7 +96,7 @@ namespace MyClient
                 this._socket.Disconnect(false);
 
                 is_connected = false;
-                Connected?.Invoke(this, EventArgs.Empty);
+                Disconnected?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -131,183 +147,62 @@ namespace MyClient
 
 
                 }
-                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     this._continueListen = false;
-                    Console.WriteLine(" >> " + ex.ToString());
                 }
             }
         }
-
-
-
-        void DisplayOtherUser()
-        {
-            Console.WriteLine($"Voici les {connected_users.Count} autres utilisateurs:");
-            foreach (var user in connected_users.Values)
-            {
-                user.Display();
-            }
-        }
-
-        void DisplayMatchRequest()
-        {
-            Console.WriteLine($"Voici les {gameRequestsRecieved.Count} requêtes reçues");
-            foreach (var r in gameRequestsRecieved.Values)
-            {
-                r.Display();
-            }
-        }
-
-        void DisplayGameBoard()
-        {
-            Console.WriteLine($">>Voici le plateau du jeu");
-            GameBoard.display(this.GameClient.GameBoardMatrix); //ajouter une exception
-            if ((this.GameClient.Mode == GameMode.Player1 && this.GameClient.IdPlayer1 != this.Opponent.Id)|| (this.GameClient.Mode == GameMode.Player2 && this.GameClient.IdPlayer2 != this.Opponent.Id))
-            {
-                Console.WriteLine(">> C'est a votre tour de jouer");
-            }
-            else if ((this.GameClient.Mode == GameMode.Player1Won && this.GameClient.IdPlayer1 != this.Opponent.Id) || (this.GameClient.Mode == GameMode.Player2Won && this.GameClient.IdPlayer2 != this.Opponent.Id))
-            {
-                Console.WriteLine(">> Vous avez gagné");
-            }
-            else if ((this.GameClient.Mode == GameMode.Player1Won) || (this.GameClient.Mode == GameMode.Player2Won ))
-            {
-                Console.WriteLine(">> Vous avez perdu");
-            }
-            else
-            {
-                Console.WriteLine(">> Ce n'est pas a votre tour de jouer");
-            }
-        }
-
-        static void Main(string[] args)
-        {
-            Client my_client = new Client();
-            Client.InnitMethods();
-            Console.WriteLine("Bonjour Client !");
-
-            //entering the commands loop
-            bool continuer = true;
-            while (continuer)
-            {
-                Console.WriteLine("Que voulez-vous faire?" +
-                    "\n\t0-envoyer un message" +
-                    "\n\t1-demander les utilisateurs connectés"+
-                    "\n\t2-changer de UserName" +
-                    "\n\t3-afficher les utilisateurs connectés" +
-                    "\n\t4-afficher les rêquetes de match" +
-                    "\n\t5-répondre à une requête de match" +
-                    "\n\t6-exprimer une requête de match" +
-                    "\n\t7-se déconnecter" +
-                    "\n\t8-se connecter" +
-                    "\n\t9-afficher l'id de l'adversaire" +
-                    "\n\t10-actualiser le plateau" +
-                    "\n\t11-afficher le plateau" +
-                    "\n\t12-Jouer une position");
-                string choice = Console.ReadLine();
-                if (choice == "0")
-                {
-
-                    Console.WriteLine("entrez un message");
-                    string message = Console.ReadLine();
-                    Messaging.SendMessage(my_client.Stream, message);
-
-                }
-                else if (choice == "1")
-                {
-                    Messaging.AskOtherUsers(my_client.Stream);
-                    Console.WriteLine("La demande a été émise");
-                }
-                else if (choice == "2")
-                {
-                    Console.WriteLine("entrez un nom d'utilisateur");
-                    string userName = Console.ReadLine();
-                    Messaging.SendUserName(my_client.Stream, userName);
-                }
-                else if (choice == "3")
-                {
-                    my_client.DisplayOtherUser();
-                }
-                else if (choice == "4")
-                {
-                    my_client.DisplayMatchRequest();
-                }
-                else if(choice == "5")
-                {
-                    Console.WriteLine("entrez l'id de l'adversaire:");
-                    int id = Convert.ToInt32(Console.ReadLine());
-                    Console.WriteLine("entrez votre réponse:");
-                    bool accepted = Convert.ToBoolean(Console.ReadLine());
-                    Messaging.SendGameRequestResponse(my_client.Stream, my_client, id, accepted);
-                }
-                else if(choice == "6")
-                {
-                    Console.WriteLine("Entrez l'id de l'adversaire souhaité:");
-                    int id = Convert.ToInt32(Console.ReadLine());
-                    Messaging.RequestMatch(my_client.Stream, id);
-                    Console.WriteLine("Requête envoyée");
-                }
-                else if (choice == "7")
-                {
-                    my_client.tryDisconnect();
-                    
-                }
-                else if (choice == "8")
-                {
-                    my_client.tryConnect();
-                    Console.WriteLine($"Connected to the server {my_client.localAddr}");
-                }
-                else if (choice == "9")
-                {
-                    if (my_client.Opponent != null)
-                    {
-                        Console.WriteLine($"L'id de votre adversaire est: {my_client.Opponent.Id} et son user name est: {my_client.Opponent.UserName}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Aucun adversaire n'est attribué");
-                    }
-                }
-                else if (choice == "10")
-                {
-                    Messaging.AskGameBoard(my_client.Stream);
-                    Console.WriteLine($"Requête envoyée");
-                }
-                else if (choice == "11")
-                {
-                    my_client.DisplayGameBoard();
-                }
-                else if (choice == "12")
-                {
-                    Console.WriteLine($"my_client.GameClient.Mode : {my_client.GameClient.Mode }; GameMode.Player1: {GameMode.Player1}; GameMode.Player2 : {GameMode.Player2}");
-                    Console.WriteLine($"my_client.GameClient.IdPlayer1 : {my_client.GameClient.IdPlayer1 }; my_client.GameClient.IdPlayer2: {my_client.GameClient.IdPlayer2}; my_client.Opponent.Id : {my_client.Opponent.Id}");
-                    {
-                        Vector3 position = new Vector3();
-                        int x = 0;
-                        int y = 0;
-                        int z = 0;
-                        Console.WriteLine("Quelle est la coordonnee x (0,1 ou 2) de la position que vous voulez jouer ? (La couche)");
-                        x = (int.Parse(Console.ReadLine()));
-                        position.X = x;
-                        Console.WriteLine("Quelle est la coordonnee y (0,1 ou 2) de la position que vous voulez jouer ? (la ligne) ");
-                        y = (int.Parse(Console.ReadLine()));
-                        position.Y = y;
-                        Console.WriteLine("Quelle est la coordonnee z (0,1 ou 2) de la position que vous voulez jouer ? (la colonne)");
-                        z = (int.Parse(Console.ReadLine()));
-                        position.Z = z;
-                        Messaging.SendPositionPlayer(my_client.Stream, position);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Commande inconnue");
-                }
-
-            }
-
-        }
-
         
+
+        internal void RaiseMatchRequestUpdated(MatchRequestEventArgs matchRequestEventArgs)
+        {
+            var handler = MatchRequestUpdated;
+            if (handler != null)
+                handler(this, matchRequestEventArgs);
+        }
+
+        internal void RaiseOpponentListUpdated(List<User> listUsers)
+        {
+            var handler = OpponentListUpdated;
+            if (handler != null)
+                handler(this, new TEventArgs<List<User>>(listUsers));
+        }
+
+        public void OnMatchUpdatingOpponentList(object sender, EventArgs e)
+        {
+            Messaging.AskOtherUsers(Stream);
+        }
+
+        public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e)
+        {
+            switch (e.Status)
+            {
+                case MatchRequestEventArgs.EStatus.New:
+                    Messaging.RequestMatch(Stream, e.User.Id);
+                    break;
+                case MatchRequestEventArgs.EStatus.Canceled:
+                    // a coder nice to have
+                    break;
+                case MatchRequestEventArgs.EStatus.Accepted:
+                    Messaging.SendGameRequestResponse(Stream, this, e.User.Id, true);
+                    break;
+                case MatchRequestEventArgs.EStatus.Declined:
+                    Messaging.SendGameRequestResponse(Stream, this, e.User.Id, false);
+                    break;
+                case MatchRequestEventArgs.EStatus.CannotBeReached:
+                    // nice to have
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
+        public void OnPositionPlayed(object sender, TEventArgs<Vector3> e)
+        {
+            var vec = e.Data;
+            Messaging.SendPositionPlayer(Stream, vec);
+        }
     }
 }

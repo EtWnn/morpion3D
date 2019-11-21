@@ -50,8 +50,10 @@ public class MainScript : MonoBehaviour
         CameraHandlerPrefab = Instantiate(CameraHandlerPrefab, transform);
         GridPrefab = Instantiate(GridPrefab, transform);
         UIControllerPrefab = Instantiate(UIControllerPrefab, transform);
-        client = new Client();
+
         Client.InnitMethods();
+        client = new Client();
+        
     }
 
     // Start is called before the first frame update

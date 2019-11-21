@@ -43,6 +43,7 @@ namespace Serveur.Functions
             //renvoie le tableau de bytes
             return msg;
         }
+
         private static byte[] serializationGameRequest(int id, string userName)
         {
             byte[] user_id_bytes = BitConverter.GetBytes((Int16)id);
@@ -61,6 +62,7 @@ namespace Serveur.Functions
             return (message_bytes);
 
         }
+
         private static byte[] serializationResponseOpponent(int idOpponent, bool response)
         {
             byte[] idOpponent_bytes = BitConverter.GetBytes((Int16)idOpponent);
@@ -70,6 +72,7 @@ namespace Serveur.Functions
             response_bytes.CopyTo(message, idOpponent_bytes.Length);
             return message;
         }
+
         private static Tuple<int, bool> deserializationResponseOpponent(byte[] bytes)
         {
             int byte_compt = 0;
@@ -77,11 +80,12 @@ namespace Serveur.Functions
             bool response = BitConverter.ToBoolean(bytes, byte_compt);
             return Tuple.Create(idOpponent, response);
         }
+
         public static byte[] RecieveUserName(byte[] bytes, UserHandler userHandler)
         {
             string userName = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
             userHandler.UserName = userName;
-            Console.WriteLine($" >> message recieved from client Id {userHandler.Id} its new userName: {userHandler.UserName}");
+            //Console.WriteLine($" >> message recieved from client Id {userHandler.Id} its new userName: {userHandler.UserName}");
             return new byte[0];
         }
 
@@ -125,7 +129,7 @@ namespace Serveur.Functions
             }
 
             string cmd_string = System.Text.Encoding.UTF8.GetString(response, 0, response.Length);
-            Console.WriteLine($" >> The client {userHandler.UserName} Id {userHandler.Id} asked for all connected user");
+            //Console.WriteLine($" >> The client {userHandler.UserName} Id {userHandler.Id} asked for all connected user");
             //Console.WriteLine($" >> packet sent {cmd_string}");
             return response;
         }
@@ -133,14 +137,22 @@ namespace Serveur.Functions
         public static byte[] ReceivePositionPlayed(byte[] bytes, UserHandler userHandler)
         {
             Vector3 position = Serialization.DeserializationPositionPlayed(bytes);
-            Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
-            Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
-            Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
-            userHandler.Game.Play(position, userHandler.Id);
-            Console.WriteLine($"La position a ete jouee");
-            Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
-            Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
-            Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
+            //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
+            //Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
+            //Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
+            if (userHandler.Game.Play(position, userHandler.Id))
+            {
+                //on renvoie la board actualisée
+                byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer1]);
+                userHandler.UsersHandlers[userHandler.Game.IdPlayer1].stream.Write(msg_board1, 0, msg_board1.Length);
+
+                byte[] msg_board2 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer2]);
+                userHandler.UsersHandlers[userHandler.Game.IdPlayer2].stream.Write(msg_board2, 0, msg_board1.Length);
+            }
+            //Console.WriteLine($"La position a ete jouee");
+            //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
+            //Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
+            //Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
             return new byte[0];
         }
 
@@ -158,16 +170,31 @@ namespace Serveur.Functions
 
         public static byte[] TransferMatchRequest(byte[] bytes, UserHandler userHandler)
         {
-            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest bytes.Lenght : {bytes.Length}");
             int idRecipient = BitConverter.ToInt16(bytes, 0);
-            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest idRecipient : {idRecipient}");
             int idSender = userHandler.Id;
-            //Console.WriteLine($">> Serveur.Messaging TransfertMatchRequest idSender : {idSender}");
+
+            Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest from {idSender} to {idRecipient}");
             string userNameSender = userHandler.UserName;
-            byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
-            byte[] msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
-            userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
-            return new byte[0];
+
+            byte[] msg = new byte[0];
+
+            if(userHandler.UsersHandlers.ContainsKey(idRecipient) && userHandler.UsersHandlers[idRecipient] == null)
+            {
+                byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
+                byte[] request_msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
+                userHandler.UsersHandlers[idRecipient].stream.Write(request_msg, 0, request_msg.Length);
+            }
+            else
+            {
+                // on rempli msg d'un refus de requête
+                byte[] msg_bytes = serializationResponseOpponent(idRecipient, false);
+                msg = serializationMessage(msg_bytes, NomCommande.RGR);
+
+                Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest the key {idRecipient} was not found or the user was in a match");
+            }
+            
+
+            return msg;
         }
 
         public static byte[] TransferGameRequestResponse(byte[] bytes, UserHandler userHandler)
@@ -175,32 +202,34 @@ namespace Serveur.Functions
             int idSender = userHandler.Id;
             Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
             int idRecipient = tuple.Item1;
-            Console.WriteLine($">> idSender = userHandler.Id est {idSender}");
-            Console.WriteLine($">> idRecipient est {idRecipient}");
             bool response = tuple.Item2;
-            byte[] msg = new byte[0];
-            if (response)
-            {
-                byte[] msg_bytes = serializationResponseOpponent(idSender, response);
-                msg = serializationMessage(msg_bytes, NomCommande.RGR);
-                Console.WriteLine($"La longueur du msg envoyé à {idRecipient} est {msg.Length}");
-                userHandler.UsersHandlers[idRecipient].stream.Write(msg, 0, msg.Length);
 
+            //la réponse est envoyer au destinataire
+            byte[] msg_bytes = serializationResponseOpponent(idSender, response);
+            byte[] msg_to_dest = serializationMessage(msg_bytes, NomCommande.RGR);
+            userHandler.UsersHandlers[idRecipient].stream.Write(msg_to_dest, 0, msg_to_dest.Length);
+
+
+            if (response) //creation de l'objet game
+            {
                 Game game = new Game();
                 game.SpecifyPlayersID(idSender, idRecipient);
-                Console.WriteLine($"l'id du player 1 est : {game.IdPlayer1}");
-                Console.WriteLine($"l'id du player 2 est : {game.IdPlayer2}");
                 userHandler.Game = game;
                 userHandler.UsersHandlers[idRecipient].Game = game;
 
-                msg_bytes = serializationResponseOpponent(idRecipient, response);
-                msg = serializationMessage(msg_bytes, NomCommande.RGR);
-                Console.WriteLine($"La longueur du msg envoyé à {idSender} est {msg.Length}");
+                //on envoie la board au destinataire
+                byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[idRecipient]);
+                userHandler.UsersHandlers[idRecipient].stream.Write(msg_board1, 0, msg_board1.Length);
+
+                //on envoie la board à l'envoyeur
+                byte[] msg_board2 = SendGameBoard(new byte[0], userHandler);
+                userHandler.stream.Write(msg_board2, 0, msg_board2.Length);
+
             }
-            else
-            {
-                
-            }
+
+            
+            msg_bytes = serializationResponseOpponent(idRecipient, response);
+            byte[] msg = serializationMessage(msg_bytes, NomCommande.RGR);
             return msg;
         }
         
@@ -228,6 +257,17 @@ namespace Serveur.Functions
 
             //envoie de la requête
             stream.Write(msg, 0, msg.Length);
+        }
+
+        public static void WriteLog(string log_file, string log)
+        {
+            DateTime localDate = DateTime.Now;
+            string log_date = localDate.ToString("s");
+            using (System.IO.StreamWriter file =
+            new System.IO.StreamWriter(log_file, true))
+            {
+                file.WriteLine(log_date + " " + log);
+            }
         }
         
     }
