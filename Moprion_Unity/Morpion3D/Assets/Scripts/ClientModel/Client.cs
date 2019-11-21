@@ -157,7 +157,7 @@ namespace MyClient
 
 
 
-        void DisplayOtherUser()
+        /*void DisplayOtherUser()
         {
             Console.WriteLine($"Voici les {connected_users.Count} autres utilisateurs:");
             foreach (var user in connected_users.Values)
@@ -195,7 +195,7 @@ namespace MyClient
             {
                 Console.WriteLine(">> Ce n'est pas a votre tour de jouer");
             }
-        }
+        }*/
 
         internal void RaiseMatchRequestUpdated(MatchRequestEventArgs matchRequestEventArgs)
         {
