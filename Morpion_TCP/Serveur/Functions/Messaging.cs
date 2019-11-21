@@ -178,7 +178,9 @@ namespace Serveur.Functions
 
             byte[] msg = new byte[0];
 
-            if(userHandler.UsersHandlers.ContainsKey(idRecipient) && userHandler.UsersHandlers[idRecipient] == null)
+            
+
+            if (userHandler.UsersHandlers.ContainsKey(idRecipient) && userHandler.UsersHandlers[idRecipient].Game == null)
             {
                 byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
                 byte[] request_msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
@@ -191,6 +193,11 @@ namespace Serveur.Functions
                 msg = serializationMessage(msg_bytes, NomCommande.RGR);
 
                 Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest the key {idRecipient} was not found or the user was in a match");
+                foreach (int k in userHandler.UsersHandlers.Keys)
+                {
+                    Console.WriteLine(k);
+                }
+                
             }
             
 
