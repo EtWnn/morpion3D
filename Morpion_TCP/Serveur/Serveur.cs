@@ -73,7 +73,7 @@ namespace Serveur
                 _userHandlers[_next_id].Start();
                 _usersMutex.ReleaseMutex();
 
-                Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {_next_id}");
+                //Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {_next_id}");
                 _next_id++;
 
             }

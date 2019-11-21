@@ -85,7 +85,7 @@ namespace Serveur.Functions
         {
             string userName = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
             userHandler.UserName = userName;
-            Console.WriteLine($" >> message recieved from client Id {userHandler.Id} its new userName: {userHandler.UserName}");
+            //Console.WriteLine($" >> message recieved from client Id {userHandler.Id} its new userName: {userHandler.UserName}");
             return new byte[0];
         }
 
@@ -129,7 +129,7 @@ namespace Serveur.Functions
             }
 
             string cmd_string = System.Text.Encoding.UTF8.GetString(response, 0, response.Length);
-            Console.WriteLine($" >> The client {userHandler.UserName} Id {userHandler.Id} asked for all connected user");
+            //Console.WriteLine($" >> The client {userHandler.UserName} Id {userHandler.Id} asked for all connected user");
             //Console.WriteLine($" >> packet sent {cmd_string}");
             return response;
         }
@@ -137,9 +137,9 @@ namespace Serveur.Functions
         public static byte[] ReceivePositionPlayed(byte[] bytes, UserHandler userHandler)
         {
             Vector3 position = Serialization.DeserializationPositionPlayed(bytes);
-            Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
-            Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
-            Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
+            //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
+            //Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
+            //Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
             if (userHandler.Game.Play(position, userHandler.Id))
             {
                 //on renvoie la board actualisée
@@ -149,10 +149,10 @@ namespace Serveur.Functions
                 byte[] msg_board2 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer2]);
                 userHandler.UsersHandlers[userHandler.Game.IdPlayer2].stream.Write(msg_board2, 0, msg_board1.Length);
             }
-            Console.WriteLine($"La position a ete jouee");
-            Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
-            Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
-            Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
+            //Console.WriteLine($"La position a ete jouee");
+            //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
+            //Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
+            //Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
             return new byte[0];
         }
 
