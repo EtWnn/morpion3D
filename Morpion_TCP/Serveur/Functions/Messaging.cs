@@ -243,6 +243,17 @@ namespace Serveur.Functions
             //envoie de la requête
             stream.Write(msg, 0, msg.Length);
         }
+
+        public static void WriteLog(string log_file, string log)
+        {
+            DateTime localDate = DateTime.Now;
+            string log_date = localDate.ToString("s");
+            using (System.IO.StreamWriter file =
+            new System.IO.StreamWriter(log_file, true))
+            {
+                file.WriteLine(log_date + " " + log);
+            }
+        }
         
     }
 }

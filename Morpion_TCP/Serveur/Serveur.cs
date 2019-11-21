@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Serveur.Functions;
 
 namespace Serveur
 {
@@ -13,6 +14,7 @@ namespace Serveur
     class Serveur
     {
         private static int _next_id = 0;
+        public const string log_file = "log.txt";
 
 
         public int port = 13000; 
@@ -69,11 +71,12 @@ namespace Serveur
                 TcpClient client = _tcp_server.AcceptTcpClient();
 
                 _usersMutex.WaitOne();
-                _userHandlers[_next_id] = new UserHandler(client, _next_id, _userHandlers, _usersMutex);
+                _userHandlers[_next_id] = new UserHandler(client, _next_id, _userHandlers, _usersMutex, log_file);
                 _userHandlers[_next_id].Start();
                 _usersMutex.ReleaseMutex();
 
                 //Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {_next_id}");
+                Messaging.WriteLog(log_file, $"A new connexion has been made, the user has been asigned the id {_next_id}");
                 _next_id++;
 
             }
@@ -127,6 +130,7 @@ namespace Serveur
                 else if (choice == "2")
                 {
                     Console.WriteLine($"\n\n>>  lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}\n\n");
+                    Messaging.WriteLog(log_file, $"lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}");
                     keep_asking = false;
                 }
                 else
@@ -174,6 +178,7 @@ namespace Serveur
                 {
                     Console.WriteLine($"\n\n>>  extinction du serveur\n\n");
                     my_serveur.Stop();
+                    Messaging.WriteLog(log_file, $"arrêt du serveur");
                     keep_asking = false;
                 }
                 else

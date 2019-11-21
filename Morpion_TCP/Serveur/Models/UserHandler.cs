@@ -53,9 +53,10 @@ namespace Serveur.Models
         public string UserName { get; set; }
         public NetworkStream stream;
         public TcpClient clientSocket { get; set; }
-        public ModelGame.Game Game { get; set; } 
+        public ModelGame.Game Game { get; set; }
+        public readonly string log_file;
 
-        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex)
+        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex, string log_file)
         {
             this.clientSocket = inClientSocket;
             this.UserName = "default_" + id.ToString();
@@ -63,8 +64,10 @@ namespace Serveur.Models
             this.Game = null;
             this.UsersHandlers = userHandlers;
             this.usersMutex = usersMutex;
+            this.log_file = log_file;
 
-            
+
+
         }
 
         public void Start()
@@ -92,8 +95,7 @@ namespace Serveur.Models
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
                         int following_length = BitConverter.ToInt16(bytes, 3);
 
-                        //Console.WriteLine($" >> command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
-
+                        Messaging.WriteLog(log_file, $"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
                         byte[] following_bytes = new byte[following_length];
                         if(following_length > 0)
                         {
