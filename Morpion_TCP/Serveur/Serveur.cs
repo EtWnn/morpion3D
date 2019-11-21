@@ -12,38 +12,177 @@ namespace Serveur
     
     class Serveur
     {
-        private static Int32 port = 13000;
-        private static IPAddress localAddr = IPAddress.Parse("127.0.0.1");
-        private static bool continuer = true;
+        private static int _next_id = 0;
+
+
+        public int port = 13000; 
+        public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+
+        private Mutex _usersMutex = new Mutex();
+        private Dictionary<int, UserHandler> _userHandlers = new Dictionary<int, UserHandler>();
+        public Dictionary<int, UserHandler> UsersHandlers
+        {
+            set
+            {
+                _usersMutex.WaitOne();
+                _userHandlers = value;
+                _usersMutex.ReleaseMutex();
+            }
+            get
+            {
+                _usersMutex.WaitOne();
+                Dictionary<int, UserHandler> userHandlers_copy = new Dictionary<int, UserHandler>(_userHandlers);
+                _usersMutex.ReleaseMutex();
+                return userHandlers_copy;
+
+            }
+        }
+        
+
+        private bool _continuer;
         private const int CMD_SIZE = 4;
 
+        private TcpListener _tcp_server = null;
+        private Thread _listeningThread = null;
+
+        public void Start()
+        {
+            _continuer = true;
+
+            _tcp_server = new TcpListener(localAddr, port);
+            _tcp_server.Start();
+
+            _listeningThread = new Thread(() => ListenConnexion());
+            _listeningThread.Start();
+        }
+
+        public void Stop()
+        {
+            _continuer = false;
+        }
+
+        private void ListenConnexion()
+        {
+            while (_continuer)
+            {
+
+                TcpClient client = _tcp_server.AcceptTcpClient();
+
+                _usersMutex.WaitOne();
+                _userHandlers[_next_id] = new UserHandler(client, _next_id, _userHandlers, _usersMutex);
+                _userHandlers[_next_id].Start();
+                _usersMutex.ReleaseMutex();
+
+                Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {_next_id}");
+                _next_id++;
+
+            }
+        }
 
         static void Main(string[] args)
         {
-            TcpListener server = null;
-            server = new TcpListener(localAddr, port);
-            server.Start();
-
-            int next_id = 0;
-            Dictionary<int, UserHandler> userHandlers = new Dictionary<int, UserHandler>();
-            Mutex usersMutex = new Mutex();
             UserHandler.InnitMethods();
 
-            while (continuer)
+            Serveur my_serveur = new Serveur();
+            Console.WriteLine("Bienvenue dans le gestionnaire serveur du Morpion3D");
+
+            bool keep_asking = true;
+            while (keep_asking)
             {
+                Console.WriteLine("Que voulez-vous faire?" +
+                    $"\n\t0-changer le port du serveur (current {my_serveur.port})" +
+                    $"\n\t1-changer l'adresse du serveur (current {my_serveur.localAddr})" +
+                    "\n\t2-lancer le serveur");
+                string choice = Console.ReadLine();
+                if (choice == "0")
+                {
 
-                TcpClient client = server.AcceptTcpClient();
+                    Console.WriteLine("entrez un port (ex 13000):");
+                    string inputString = Console.ReadLine();
 
-                usersMutex.WaitOne();
-                userHandlers[next_id] = new UserHandler(client, next_id, userHandlers, usersMutex);
-                userHandlers[next_id].Start();
-                usersMutex.ReleaseMutex();
+                    if (int.TryParse(inputString, out int new_port))
+                    {
+                        my_serveur.port = new_port;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"int.TryParse could not parse '{inputString}' to an int.");
+                    }
 
-                Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {next_id}");
-                next_id++;
+                }
+                else if (choice == "1")
+                {
+                    Console.WriteLine("entrez une adresse (ex 127.0.0.1)");
+                    string inputString = Console.ReadLine();
 
+                    if (IPAddress.TryParse(inputString, out IPAddress new_adress))
+                    {
+                        my_serveur.localAddr = new_adress;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"IPAddress.TryParse could not parse '{inputString}' to an IPAddress.");
+                    }
+                }
+                else if (choice == "2")
+                {
+                    Console.WriteLine($"\n\n>>  lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}\n\n");
+                    keep_asking = false;
+                }
+                else
+                {
+                    Console.WriteLine("Commande inconnue, réessayez");
+                }
             }
 
+            my_serveur.Start();
+
+            keep_asking = true;
+            while (keep_asking)
+            {
+                Console.WriteLine("Que voulez-vous faire?" +
+                "\n\t0-afficher les utilisateurs connectés" +
+                "\n\t1-afficher les matches en cours" +
+                "\n\t2-éteindre le serveur");
+                string choice = Console.ReadLine();
+                if (choice == "0")
+                {
+                    Console.WriteLine($"Voici les {my_serveur.UsersHandlers.Count} utilisateurs connectés:");
+                    foreach (var user in my_serveur.UsersHandlers.Values)
+                    {
+                        if(user.IsAlive())
+                        {
+                            Console.WriteLine($"id {user.Id}, username: {user.UserName}");
+                        }
+                            
+                    }
+
+                }
+                else if (choice == "1")
+                {
+                    Console.WriteLine($"Voici les {my_serveur.UsersHandlers.Count} utilisateurs en jeu:");
+                    foreach (var user in my_serveur.UsersHandlers.Values)
+                    {
+                        if (user.IsAlive() & user.Game != null)
+                        {
+                            Console.WriteLine($"id {user.Id}, username: {user.UserName}");
+                        }
+
+                    }
+                }
+                else if (choice == "2")
+                {
+                    Console.WriteLine($"\n\n>>  extinction du serveur\n\n");
+                    my_serveur.Stop();
+                    keep_asking = false;
+                }
+                else
+                {
+                    Console.WriteLine("Commande inconnue, réessayez");
+                }
+            }
         }
+
+
     }
 }

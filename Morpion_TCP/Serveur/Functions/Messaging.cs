@@ -43,6 +43,7 @@ namespace Serveur.Functions
             //renvoie le tableau de bytes
             return msg;
         }
+
         private static byte[] serializationGameRequest(int id, string userName)
         {
             byte[] user_id_bytes = BitConverter.GetBytes((Int16)id);
@@ -61,6 +62,7 @@ namespace Serveur.Functions
             return (message_bytes);
 
         }
+
         private static byte[] serializationResponseOpponent(int idOpponent, bool response)
         {
             byte[] idOpponent_bytes = BitConverter.GetBytes((Int16)idOpponent);
@@ -70,6 +72,7 @@ namespace Serveur.Functions
             response_bytes.CopyTo(message, idOpponent_bytes.Length);
             return message;
         }
+
         private static Tuple<int, bool> deserializationResponseOpponent(byte[] bytes)
         {
             int byte_compt = 0;
@@ -77,6 +80,7 @@ namespace Serveur.Functions
             bool response = BitConverter.ToBoolean(bytes, byte_compt);
             return Tuple.Create(idOpponent, response);
         }
+
         public static byte[] RecieveUserName(byte[] bytes, UserHandler userHandler)
         {
             string userName = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
