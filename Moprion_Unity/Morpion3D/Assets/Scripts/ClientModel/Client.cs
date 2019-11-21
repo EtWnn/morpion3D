@@ -29,6 +29,7 @@ namespace MyClient
         public event EventHandler Disconnected;
         public event EventHandler GameUpdated;
         public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
+        public event EventHandler<TEventArgs<List<User>>> OpponentListUpdated;
 
 
         public bool is_connected = false;
@@ -201,6 +202,18 @@ namespace MyClient
             var handler = MatchRequestUpdated;
             if (handler != null)
                 handler(this, matchRequestEventArgs);
+        }
+
+        internal void RaiseOpponentListUpdated(List<User> listUsers)
+        {
+            var handler = OpponentListUpdated;
+            if (handler != null)
+                handler(this, new TEventArgs<List<User>>(listUsers));
+        }
+
+        public void OnMatchUpdatingOpponentList(object sender, EventArgs e)
+        {
+            Messaging.AskOtherUsers(Stream);
         }
 
         public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e)

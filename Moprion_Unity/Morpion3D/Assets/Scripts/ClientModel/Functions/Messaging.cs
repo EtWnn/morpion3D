@@ -130,15 +130,17 @@ namespace MyClient.Functions
             //Console.WriteLine($"I recieved {n_users} users");
             client.connected_users = new Dictionary<int, User>();
             int byte_compt = 2;
-            for(int i = 0; i < n_users; i++)
+            List<User> listUsers = new List<User>();
+            for (int i = 0; i < n_users; i++)
             {
                 int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
                 int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
                 string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
-
-                client.connected_users[user_id] = new User(user_id, userName);
+                User user = new User(user_id, userName);
+                client.connected_users[user_id] = user;
+                listUsers.Add(user);
             }
-
+            client.RaiseOpponentListUpdated(listUsers);
         }
 
         public static void SendMessage(NetworkStream stream, string message)
