@@ -95,7 +95,7 @@ public class MainScript : MonoBehaviour
         State = EState.InMainMenu;
 
         client.port = 13000;
-        client.localAddr = System.Net.IPAddress.Parse("138.195.241.26");
+        client.localAddr = System.Net.IPAddress.Parse("127.0.0.1");
 
         client.tryConnect();
         //StartCoroutine(IERepeatTryConnect(100));

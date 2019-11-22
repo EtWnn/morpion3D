@@ -137,8 +137,9 @@ public class MatchRequestHandler : MonoBehaviour
                     }
 
             if (update)
-                Debug.LogError("New MatchRequestInfo has not been handled! UserName : "
-                    + MatchRequestInfo.User.UserName + " [" + MatchRequestInfo.Status + "]");
+                Debug.LogError("New MatchRequestInfo has not been handled! ["
+                    + MatchRequestInfo.User.UserName + ", " + MatchRequestInfo.Status + ", "
+                    + MatchRequestInfo.User.Id + "]");
         }
     }
 
@@ -152,6 +153,7 @@ public class MatchRequestHandler : MonoBehaviour
         popup.CancelButton.onClick.AddListener(() =>
         {
             Destroy(popup.gameObject);
+            Debug.Log("CancelButton clicked");
             MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(e.User, MatchRequestEventArgs.EStatus.Canceled));
         });
         popup.StatorAnimation.StartRotate(1);
@@ -183,35 +185,30 @@ private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
                 popup.AcceptButton.interactable = false;
                 popup.DeclineButton.interactable = false;
                 popup.StatorAnimation.StartPulse(Color.green, 0.5f, 4);
-                popup.StatorAnimation.Finished += (sender, e) =>
+                popup.StatorAnimation.Finished.UnsubscribeAll();
+                popup.StatorAnimation.Finished.Subscribe((sender, e) =>
                 {
                     Destroy(popup.gameObject);
                     UIController.RaiseReadyToGame();
-                };
-                MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(matchRequest.User, MatchRequestEventArgs.EStatus.Accepted));
-                popupUpdaters.Add((MatchRequestEventArgs mr) =>
-                {
-                    if (mr.User.Id == matchRequest.User.Id)
-                    {
-                        Debug.Log("New matchRequest echo received: [" + mr.User.UserName + ", " + mr.Status + "]");
-                        return true;
-                    }
-                    return false;
                 });
+                MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(matchRequest.User, MatchRequestEventArgs.EStatus.Accepted));
+                popupUpdaters.Add(MatchRequestEchoHandlerGen(matchRequest.User));
             });
 
             popup.DeclineButton.onClick.AddListener(() =>
             {
                 Destroy(popup.gameObject);
                 MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(matchRequest.User, MatchRequestEventArgs.EStatus.Declined));
+                popupUpdaters.Add(MatchRequestEchoHandlerGen(matchRequest.User));
             });
 
             popup.StatorAnimation.StartTimeout(5);
-            popup.StatorAnimation.Finished += (sender, e) =>
+            popup.StatorAnimation.Finished.Subscribe((sender, e) =>
             {
                 Destroy(popup.gameObject);
+                Debug.Log("Sending automatic decline answer [TIMEOUT]");
                 MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(matchRequest.User, MatchRequestEventArgs.EStatus.Declined));
-            };
+            });
 
             // Set popup updater function
             var popupUpdater = NewMatchRequestCanceledUpdaterGen(popup, matchRequest.User);
@@ -258,10 +255,10 @@ private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
                         popup.Text = "<color=#66FFD9><b>" + user.UserName + "</b></color> has accepted the request!";
                         popup.CancelButton.interactable = false;
                         popup.StatorAnimation.StartPulse(Color.green, 1f, 3);
-                        popup.StatorAnimation.Finished += (object sender_, TEventArgs<StatorAnimation.EAnimation> e_) => {
+                        popup.StatorAnimation.Finished.Subscribe((object sender_, TEventArgs<StatorAnimation.EAnimation> e_) => {
                             Destroy(popup.gameObject);
                             UIController.RaiseReadyToGame();
-                        };
+                        });
                         return true;
 
                     case MatchRequestEventArgs.EStatus.Declined:
@@ -278,10 +275,23 @@ private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
 
                     case MatchRequestEventArgs.EStatus.Canceled:
                         popup.StatorAnimation.Interrupt();
-                        popup.Text = "<color=#66FFD9><b>" + user.UserName + "</b></color> cannot be reached!";
+                        popup.Text = "<color=#66FFD9><b>" + user.UserName + "</b></color> canceled be reached!";
                         popup.StatorAnimation.StartPulse(Color.red, 1f);
                         return true;
                 }
+            }
+            return false;
+        };
+    }
+
+    private Func<MatchRequestEventArgs, bool> MatchRequestEchoHandlerGen(User targetUser)
+    {
+        return (MatchRequestEventArgs mr) =>
+        {
+            if (mr.User.Id == targetUser.Id)
+            {
+                Debug.Log("New matchRequest echo received: [" + mr.User.UserName + ", " + mr.Status + ", " + mr.User.Id + "]");
+                return true;
             }
             return false;
         };

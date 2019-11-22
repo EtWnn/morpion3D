@@ -7,6 +7,8 @@ using System;
 
 public class StatorAnimation : MonoBehaviour
 {
+    public EventWrapper<TEventArgs<EAnimation>> Finished = new EventWrapper<TEventArgs<EAnimation>>();
+    
     public enum EAnimation
     {
         Timeout,
@@ -14,7 +16,6 @@ public class StatorAnimation : MonoBehaviour
         Pulse,
     }
 
-    public event EventHandler<TEventArgs<EAnimation>> Finished;
     private Image stator;
     private Image rotator;
     private Color baseStatorColor;
@@ -50,32 +51,6 @@ public class StatorAnimation : MonoBehaviour
         rotator = transform.Find("Rotator").GetComponent<Image>();
     }
 
-    /// Used for test purpose
-
-    //private void Start()
-    //{
-    //    Finished += OnFinished;
-    //    StartTimeout(3);
-    //}
-
-    //private void OnFinished(object sender, TEventArgs<EAnimation> e)
-    //{
-    //    switch (e.Data)
-    //    {
-    //        case EAnimation.Timeout:
-    //            StartRotate(1, 3);
-    //            break;
-    //        case EAnimation.Rotate:
-    //            StartPulse(rotator.color, 1, 3);
-    //            break;
-    //        case EAnimation.Pulse:
-    //            StartTimeout(3);
-    //            break;
-    //        default:
-    //            break;
-    //    }
-    //}
-
     IEnumerator TimeoutAnim(float duration)
     {
         float t = 0;
@@ -86,7 +61,7 @@ public class StatorAnimation : MonoBehaviour
             yield return null;
         }
         rotator.fillAmount = 0;
-        Finished?.Invoke(this, new TEventArgs<EAnimation>(EAnimation.Timeout));
+        Finished.Invoke(this, new TEventArgs<EAnimation>(EAnimation.Timeout));
     }
 
     IEnumerator PulseAnim(Color c1, Color c2, float period, int numPulses = 0)
@@ -102,7 +77,7 @@ public class StatorAnimation : MonoBehaviour
             yield return null;
         }
         stator.color = c1;
-        Finished?.Invoke(this, new TEventArgs<EAnimation>(EAnimation.Pulse));
+        Finished.Invoke(this, new TEventArgs<EAnimation>(EAnimation.Pulse));
     }
 
     IEnumerator RotateRotatorAnim(float period, float numTurns = 0)
@@ -117,6 +92,6 @@ public class StatorAnimation : MonoBehaviour
             yield return null;
         }
         rotator.gameObject.transform.eulerAngles = Vector3.zero;
-        Finished?.Invoke(this, new TEventArgs<EAnimation>(EAnimation.Rotate));
+        Finished.Invoke(this, new TEventArgs<EAnimation>(EAnimation.Rotate));
     }
 }
