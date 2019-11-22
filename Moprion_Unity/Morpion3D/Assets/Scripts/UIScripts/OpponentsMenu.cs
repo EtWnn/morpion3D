@@ -94,7 +94,7 @@ public class OpponentsMenu : MonoBehaviour
     ///// Private methods /////
 
     // [Test Field] Used to simulate client
-    OpponentListUpdater client;
+    //OpponentListUpdater client;
 
     private void Awake()
     {
@@ -117,10 +117,10 @@ public class OpponentsMenu : MonoBehaviour
 
         /// Client simulation for testing
 
-        client = new OpponentListUpdater();
+        //client = new OpponentListUpdater();
 
-        client.OpponentListUpdated += OnOpponentListUpdated;
-        UpdatingOpponentList += client.OnUpdatingOpponentList;
+        //client.OpponentListUpdated += OnOpponentListUpdated;
+        //UpdatingOpponentList += client.OnUpdatingOpponentList;
     }
 
     // Update is called once per frame

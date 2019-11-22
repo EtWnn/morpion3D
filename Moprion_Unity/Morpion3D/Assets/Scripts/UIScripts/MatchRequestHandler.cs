@@ -101,14 +101,14 @@ public class MatchRequestHandler : MonoBehaviour
 
     // Test field: simulate client
     // TODO: Replace with real client
-    CientMatchReq client;
+    //CientMatchReq client;
 
     private void Awake()
     {
         UIController = GetComponentInParent<UIController>();
         PopupPanel = GetComponent<PopupPanel>();
 
-        client = new CientMatchReq();
+        //client = new CientMatchReq();
         popupUpdaters = new List<Func<MatchRequestEventArgs, bool>>();
     }
 
@@ -116,10 +116,10 @@ public class MatchRequestHandler : MonoBehaviour
     {
         UIController.OpponentsMenu.SendingMatchRequest += OnSendingMatchRequest;
         // TODO: replace with real client
-        MatchRequestUpdated += client.OnMatchRequestUpdated;
-        client.MatchRequestUpdated += (sender, e) => { MatchRequestInfo = e; update = true; };
+        //MatchRequestUpdated += client.OnMatchRequestUpdated;
+        //client.MatchRequestUpdated += (sender, e) => { MatchRequestInfo = e; update = true; };
 
-        client.SimulateRequestFromOpponent(10000);
+        //client.SimulateRequestFromOpponent(10000);
     }
 
     private void Update()
@@ -165,9 +165,11 @@ public class MatchRequestHandler : MonoBehaviour
         MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(e.User, MatchRequestEventArgs.EStatus.New));
     }
 
-    ///// Popup updater functions and generators /////
+    public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e) { MatchRequestInfo = e; update = true; }
 
-    private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
+///// Popup updater functions and generators /////
+
+private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
     {
         if (matchRequest.Status == MatchRequestEventArgs.EStatus.New)
         {
@@ -260,6 +262,12 @@ public class MatchRequestHandler : MonoBehaviour
                         return true;
 
                     case MatchRequestEventArgs.EStatus.CannotBeReached:
+                        popup.StatorAnimation.Interrupt();
+                        popup.Text = "<color=#66FFD9><b>" + user.UserName + "</b></color> cannot be reached!";
+                        popup.StatorAnimation.StartPulse(Color.red, 1f);
+                        return true;
+
+                    case MatchRequestEventArgs.EStatus.Canceled:
                         popup.StatorAnimation.Interrupt();
                         popup.Text = "<color=#66FFD9><b>" + user.UserName + "</b></color> cannot be reached!";
                         popup.StatorAnimation.StartPulse(Color.red, 1f);

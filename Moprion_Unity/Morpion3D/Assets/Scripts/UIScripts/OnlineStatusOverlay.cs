@@ -49,6 +49,7 @@ public class OnlineStatusOverlay : MonoBehaviour
     
     public void OnConnected(object sender, EventArgs e)
     {
+        Debug.Log(State);
         State.Write(EState.Online);
     }
 
@@ -58,7 +59,7 @@ public class OnlineStatusOverlay : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         OfflineColor = Color.red;
         OnlineColor = Color.green;
@@ -72,13 +73,15 @@ public class OnlineStatusOverlay : MonoBehaviour
         image.color = OfflineColor;
         text.text = OfflineText;
 
+        Debug.Log("init State");
+
         State = new SharedUpdatable<EState>(EState.Offline);
         State.UpdateAction = updateState;
 
-        TestClient client = new TestClient();
-        client.Connected += OnConnected;
-        client.Disconnected += OnDisconnected;
-        client.Start();
+        //TestClient client = new TestClient();
+        //client.Connected += OnConnected;
+        //client.Disconnected += OnDisconnected;
+        //client.Start();
     }
 
     private void updateState(EState state)

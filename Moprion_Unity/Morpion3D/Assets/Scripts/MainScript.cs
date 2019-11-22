@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -80,9 +81,24 @@ public class MainScript : MonoBehaviour
         gameReadyEventsState.Add(cameraScript, false);
 
         client.Connected += uiControllerScript.OnlineStatusOverlay.OnConnected;
+        client.Disconnected += uiControllerScript.OnlineStatusOverlay.OnDisconnected;
 
+        uiControllerScript.OpponentsMenu.UpdatingOpponentList += client.OnMatchUpdatingOpponentList;
+        client.OpponentListUpdated += uiControllerScript.OpponentsMenu.OnOpponentListUpdated;
+
+        client.MatchRequestUpdated += uiControllerScript.MatchRequestHandler.OnMatchRequestUpdated;
+        uiControllerScript.MatchRequestHandler.MatchRequestUpdated += client.OnMatchRequestUpdated;
+
+        client.GameUpdated += gridScript.OnGameUpdated;
+        gridScript.PositionPlayed += client.OnPositionPlayed;
 
         State = EState.InMainMenu;
+
+        client.port = 13000;
+        client.localAddr = System.Net.IPAddress.Parse("138.195.241.48");
+
+        client.tryConnect();
+        //StartCoroutine(IERepeatTryConnect(100));
     }
 
     void StartGame()
@@ -103,5 +119,20 @@ public class MainScript : MonoBehaviour
         if (!gameReadyEventsState.ContainsValue(false))
             State = EState.InGame;
     }
+
+    //void OnConnected(object sender, EventArgs e)
+    //{
+    //    StopCoroutine()
+    //}
+
+    //IEnumerator IERepeatTryConnect(float period)
+    //{
+    //    while(!client.is_connected)
+    //    {
+    //        client.tryConnect();
+    //        yield return new WaitForSeconds(period);
+    //    }
+    //    yield break;
+    //}
 }
 

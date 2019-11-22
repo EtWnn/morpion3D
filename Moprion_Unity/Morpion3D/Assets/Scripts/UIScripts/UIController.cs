@@ -22,6 +22,7 @@ public class UIController : MonoBehaviour
     public OptionsMenu OptionsMenu { get; private set; }
     public PopupPanel PopupPanel { get; private set; }
     public TurnIndicator TurnIndicator { get; private set; }
+    public MatchRequestHandler MatchRequestHandler { get; private set; }
 
     public event EventHandler ReadyToGame;
     public event EventHandler StateChange;
@@ -45,7 +46,9 @@ public class UIController : MonoBehaviour
         OptionsMenu = transform.Find("Canvas/OptionsMenuGO").GetComponent<OptionsMenu>();
         OnlineStatusOverlay = transform.Find("Canvas/OnlineStatusGO").GetComponent<OnlineStatusOverlay>();
         OpponentsMenu = transform.Find("Canvas/OpponentsMenuGO").GetComponent<OpponentsMenu>();
-        PopupPanel = transform.Find("Canvas/PopupPanel").GetComponent<PopupPanel>();
+        var popupPanelGo = transform.Find("Canvas/PopupPanel");
+        PopupPanel = popupPanelGo.GetComponent<PopupPanel>();
+        MatchRequestHandler = popupPanelGo.GetComponent<MatchRequestHandler>();
         TurnIndicator = transform.Find("Canvas/TurnIndicator").GetComponent<TurnIndicator>();
         GameCommandsOverlay = transform.Find("Canvas/GameCommandsOverlay").gameObject;
     }

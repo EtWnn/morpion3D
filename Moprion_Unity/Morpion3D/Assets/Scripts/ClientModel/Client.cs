@@ -12,6 +12,9 @@ using MyClient.Models;
 using MyClient.ModelGame;
 using System.Numerics;
 
+using UnityEngine;
+using System.Numerics;
+
 namespace MyClient
 {
     public class Client
@@ -136,11 +139,12 @@ namespace MyClient
 
                         if (cmd_type == NomCommande.MSG)
                         {
-                            Messaging.RecieveMessage(following_bytes);
+                            //Messaging.RecieveMessage(following_bytes);
                         }
                         else
                         {
                             Client.methods[cmd_type](following_bytes, this);
+                            Debug.Log(cmd_type);
                         }
                     }
 
@@ -199,7 +203,7 @@ namespace MyClient
 
         }
 
-        public void OnPositionPlayed(object sender, TEventArgs<Vector3> e)
+        public void OnPositionPlayed(object sender, TEventArgs<System.Numerics.Vector3> e)
         {
             var vec = e.Data;
             Messaging.SendPositionPlayer(Stream, vec);

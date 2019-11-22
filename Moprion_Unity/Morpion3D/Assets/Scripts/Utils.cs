@@ -191,3 +191,105 @@ public class SharedUpdatable<T>
         return processed;
     }
 }
+
+/// Based on work from various author, see https://forum.unity.com/threads/extended-coroutines.202064/ for original post and contributions
+
+public enum CoroutineState
+{
+    Ready,
+    Running,
+    Paused,
+    Finished
+}
+
+public class CoroutineController
+{
+    public event EventHandler Finished;
+
+    public IEnumerator Routine { get; private set; }
+    public Coroutine Coroutine { get; private set; }
+    public CoroutineState State { get; private set; }
+
+    public CoroutineController(IEnumerator routine)
+    {
+        Routine = routine;
+        State = CoroutineState.Ready;
+    }
+
+    public void StartCoroutine(MonoBehaviour monoBehaviour) => Coroutine = monoBehaviour.StartCoroutine(Start());
+
+    private IEnumerator Start()
+    {
+        if (State != CoroutineState.Ready)
+            throw new System.InvalidOperationException("Unable to start coroutine in state: " + State);
+
+        State = CoroutineState.Running;
+        do
+        {
+            try
+            {
+                if (!Routine.MoveNext())
+                    State = CoroutineState.Finished;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("Exception in coroutine: " + ex.Message);
+                State = CoroutineState.Finished;
+                break;
+            }
+
+            yield return Routine.Current;
+            while (State == CoroutineState.Paused)
+                yield return null;
+        } while (State == CoroutineState.Running);
+
+        State = CoroutineState.Finished;
+
+        Finished?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void Stop()
+    {
+        if (State != CoroutineState.Running && State != CoroutineState.Paused)
+            throw new System.InvalidOperationException("Unable to stop coroutine in state: " + State);
+
+        State = CoroutineState.Finished;
+    }
+
+    public void Pause()
+    {
+        if (State != CoroutineState.Running)
+            throw new System.InvalidOperationException("Unable to pause coroutine in state: " + State);
+
+        State = CoroutineState.Paused;
+    }
+
+    public void Resume()
+    {
+        if (State != CoroutineState.Paused)
+            throw new System.InvalidOperationException("Unable to resume coroutine in state: " + State);
+
+        State = CoroutineState.Running;
+    }
+
+    public void Reset()
+    {
+        if (State != CoroutineState.Finished)
+            throw new System.InvalidOperationException("Unable to reset coroutine in state: " + State);
+    }
+}
+
+public static class CoroutineExtensions
+{
+    public static CoroutineController StartCoroutineEx(this MonoBehaviour monoBehaviour, IEnumerator routine)
+    {
+        if (routine == null)
+        {
+            throw new System.ArgumentNullException("routine");
+        }
+
+        CoroutineController coroutineController = new CoroutineController(routine);
+        coroutineController.StartCoroutine(monoBehaviour);
+        return coroutineController;
+    }
+}
