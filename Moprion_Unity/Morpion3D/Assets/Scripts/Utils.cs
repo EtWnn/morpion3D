@@ -182,7 +182,7 @@ public class SharedUpdatable<T>
             {
                 UpdateAction(data);
                 processed = true;
-                upToDate = false;
+                upToDate = true;
             }
         }
 

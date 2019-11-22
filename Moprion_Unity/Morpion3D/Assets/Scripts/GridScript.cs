@@ -5,10 +5,6 @@ using MyClient;
 using MyClient.Models;
 using MyClient.ModelGame;
 
-internal class GridTestClient
-{
-    public User User { get; set; }
-}
 
 public class GridScript : MonoBehaviour
 {
@@ -39,18 +35,17 @@ public class GridScript : MonoBehaviour
     private GameObject player1FillingObject;
     private GameObject player2FillingObject;
 
-    private OptionsMenu optionsMenu;
-
     private bool firstUpdate = true;
     private bool isPlayer1;
 
-    private GridTestClient client;
+    private MainScript mainScript;
 
     ////// Public methods //////
 
     public void SetActive(bool value) => gameObject.SetActive(value);
 
     ////// Events Handlers //////
+
 
     public void OnStateChange(object sender, EventArgs e)
     {
@@ -119,10 +114,7 @@ public class GridScript : MonoBehaviour
         gameState.UpdateAction = UpdateGameState;
         PlayerFillingObject = CrossPrefab;
         OpponentFillingObject = TorePrefab;
-
-        client = new GridTestClient();
-        client.User = new User(123456, "JohnDoe");
-        
+        mainScript = GetComponentInParent<MainScript>();
         CreateGrid();
     }
 
@@ -172,6 +164,8 @@ public class GridScript : MonoBehaviour
                 {
                     var cubelet = Instantiate(CubeletPrefab, new Vector3(x - 1, y - 1, z - 1), new Quaternion(0, 0, 0, 0), transform);
                     var cubeletScript = cubelet.GetComponent<CubeletScript>();
+                    cubeletScript.Position = new System.Numerics.Vector3(x, y, z);
+                    cubeletScript.Clicked += OnCubeletClicked;
                     GetComponentInParent<MainScript>().StateChange += cubeletScript.OnStateChange;
                     cubelets[x, y, z] = cubeletScript;
                 }
@@ -188,8 +182,16 @@ public class GridScript : MonoBehaviour
 
     private void UpdateGameState(Game gameState)
     {
+        Debug.Log("In: UpdateGameState()");
         if(firstUpdate)
-            isPlayer1 = gameState.IdPlayer1 == client.User.Id;
+        {
+            isPlayer1 = gameState.IdPlayer1 != mainScript.Client.Opponent.Id;
+            player1FillingObject = isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
+            player2FillingObject = !isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
+
+            Debug.Log("FirstUpdateGameState()");
+            firstUpdate = false;
+        }
 
         /// Updating whole grid crosses and tores
         for (var x = 0; x < 3; x++)
@@ -213,6 +215,9 @@ public class GridScript : MonoBehaviour
                             break;
                     }
 
+        Debug.Log("Game grid updated!");
+
+
         switch (gameState.Mode)
         {
             case GameMode.Player1:
@@ -230,6 +235,9 @@ public class GridScript : MonoBehaviour
             default:
                 break;
         }
+
+        Debug.Log("Game mode changed!");
+
     }
 
     private void SetPlayerTurn(bool isPlayerTurn)
