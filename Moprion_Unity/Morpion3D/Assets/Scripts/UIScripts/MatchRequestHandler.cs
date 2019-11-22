@@ -189,6 +189,15 @@ private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
                     UIController.RaiseReadyToGame();
                 };
                 MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(matchRequest.User, MatchRequestEventArgs.EStatus.Accepted));
+                popupUpdaters.Add((MatchRequestEventArgs mr) =>
+                {
+                    if (mr.User.Id == matchRequest.User.Id)
+                    {
+                        Debug.Log("New matchRequest echo received: [" + mr.User.UserName + ", " + mr.Status + "]");
+                        return true;
+                    }
+                    return false;
+                });
             });
 
             popup.DeclineButton.onClick.AddListener(() =>
