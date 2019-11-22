@@ -7,19 +7,18 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Serveur.Functions;
-using System.Linq;
 
 namespace Serveur
 {
     
-    public class Serveur
+    class Serveur
     {
         private static int _next_id = 0;
         public const string log_file = "log.txt";
 
 
-        public int Port = 13000; 
-        public IPAddress Ip = IPAddress.Parse("127.0.0.1");
+        public int port = 13000; 
+        public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
         private Mutex _usersMutex = new Mutex();
         private Dictionary<int, UserHandler> _userHandlers = new Dictionary<int, UserHandler>();
@@ -50,12 +49,9 @@ namespace Serveur
 
         public void Start()
         {
-
-            Messaging.WriteLog(log_file, $"lancement du serveur sur le port {Port} de l'adresse {Ip}");
-
             _continuer = true;
 
-            _tcp_server = new TcpListener(Ip, Port);
+            _tcp_server = new TcpListener(localAddr, port);
             _tcp_server.Start();
 
             _listeningThread = new Thread(() => ListenConnexion());
@@ -97,8 +93,8 @@ namespace Serveur
             while (keep_asking)
             {
                 Console.WriteLine("Que voulez-vous faire?" +
-                    $"\n\t0-changer le port du serveur (current {my_serveur.Port})" +
-                    $"\n\t1-changer l'adresse du serveur (current {my_serveur.Ip})" +
+                    $"\n\t0-changer le port du serveur (current {my_serveur.port})" +
+                    $"\n\t1-changer l'adresse du serveur (current {my_serveur.localAddr})" +
                     "\n\t2-lancer le serveur");
                 string choice = Console.ReadLine();
                 if (choice == "0")
@@ -109,7 +105,7 @@ namespace Serveur
 
                     if (int.TryParse(inputString, out int new_port))
                     {
-                        my_serveur.Port = new_port;
+                        my_serveur.port = new_port;
                     }
                     else
                     {
@@ -124,7 +120,7 @@ namespace Serveur
 
                     if (IPAddress.TryParse(inputString, out IPAddress new_adress))
                     {
-                        my_serveur.Ip = new_adress;
+                        my_serveur.localAddr = new_adress;
                     }
                     else
                     {
@@ -133,7 +129,8 @@ namespace Serveur
                 }
                 else if (choice == "2")
                 {
-                    Console.WriteLine($"\n\n>>  lancement du serveur sur le port {my_serveur.Port} de l'adresse {my_serveur.Ip}\n\n");
+                    Console.WriteLine($"\n\n>>  lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}\n\n");
+                    Messaging.WriteLog(log_file, $"lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}");
                     keep_asking = false;
                 }
                 else
@@ -154,29 +151,27 @@ namespace Serveur
                 string choice = Console.ReadLine();
                 if (choice == "0")
                 {
-                    var connected_users = from user in my_serveur.UsersHandlers.Values
-                                      where user.IsAlive()
-                                      orderby user.Id, user.UserName
-                                      select user;
-
-                    Console.WriteLine($"Voici les {connected_users.Count()} utilisateurs connectés:");
-                    foreach (var user in connected_users)
+                    Console.WriteLine($"Voici les {my_serveur.UsersHandlers.Count} utilisateurs connectés:");
+                    foreach (var user in my_serveur.UsersHandlers.Values)
                     {
-                        Console.WriteLine($"id {user.Id}, username: {user.UserName}");
+                        if(user.IsAlive())
+                        {
+                            Console.WriteLine($"id {user.Id}, username: {user.UserName}");
+                        }
+                            
                     }
 
                 }
                 else if (choice == "1")
                 {
-                    var in_game_users = from user in my_serveur.UsersHandlers.Values
-                                            where user.IsAlive() && user.Game != null
-                                            orderby user.Id, user.UserName
-                                            select user;
-
-                    Console.WriteLine($"Voici les {in_game_users.Count()} utilisateurs en jeu:");
-                    foreach (var user in in_game_users)
+                    Console.WriteLine($"Voici les {my_serveur.UsersHandlers.Count} utilisateurs en jeu:");
+                    foreach (var user in my_serveur.UsersHandlers.Values)
                     {
-                        Console.WriteLine($"id {user.Id}, username: {user.UserName}");
+                        if (user.IsAlive() && user.Game != null)
+                        {
+                            Console.WriteLine($"id {user.Id}, username: {user.UserName}");
+                        }
+
                     }
                 }
                 else if (choice == "2")

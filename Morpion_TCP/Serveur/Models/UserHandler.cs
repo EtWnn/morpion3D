@@ -113,7 +113,7 @@ namespace Serveur.Models
 
                     
                 }
-                catch (System.IO.IOException) //à faire: prendre en compte la fermeture innatendue du canal par le client
+                catch (System.Net.Sockets.SocketException ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
                 {
                     continuer = false;
                     Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
