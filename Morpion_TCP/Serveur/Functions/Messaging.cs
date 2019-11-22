@@ -136,18 +136,24 @@ namespace Serveur.Functions
 
         public static byte[] ReceivePositionPlayed(byte[] bytes, UserHandler userHandler)
         {
+            Messaging.WriteLog(userHandler.log_file, $"*** ReceivePositionPlayed: from user id {userHandler.Id}");
             Vector3 position = Serialization.DeserializationPositionPlayed(bytes);
             //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
             //Console.WriteLine($"l'identifiant du joueur 2 est : {userHandler.Game.IdPlayer2}");
             //Console.WriteLine($"le mode du jeu est : {userHandler.Game.Mode}");
             if (userHandler.Game.Play(position, userHandler.Id))
             {
+                Messaging.WriteLog(userHandler.log_file, $"*** ReceivePositionPlayed: success");
                 //on renvoie la board actualisée
                 byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer1]);
                 userHandler.UsersHandlers[userHandler.Game.IdPlayer1].stream.Write(msg_board1, 0, msg_board1.Length);
 
                 byte[] msg_board2 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer2]);
                 userHandler.UsersHandlers[userHandler.Game.IdPlayer2].stream.Write(msg_board2, 0, msg_board1.Length);
+            }
+            else
+            {
+                Messaging.WriteLog(userHandler.log_file, $"*** ReceivePositionPlayed: failed, illegal move");
             }
             //Console.WriteLine($"La position a ete jouee");
             //Console.WriteLine($"l'identifiant du joueur 1 est : {userHandler.Game.IdPlayer1}");
@@ -165,6 +171,7 @@ namespace Serveur.Functions
             }
 
             byte[] response = serializationMessage(bytesGame, NomCommande.DGB);
+            Messaging.WriteLog(userHandler.log_file, $"*** SendGameBoard: to user id {userHandler.Id}");
             return response;
         }
 
@@ -173,16 +180,19 @@ namespace Serveur.Functions
             int idRecipient = BitConverter.ToInt16(bytes, 0);
             int idSender = userHandler.Id;
 
-            Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest from {idSender} to {idRecipient}");
+            Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest: try from {idSender} to {idRecipient}");
             string userNameSender = userHandler.UserName;
 
             byte[] msg = new byte[0];
 
-            if(userHandler.UsersHandlers.ContainsKey(idRecipient) && userHandler.UsersHandlers[idRecipient] == null)
+            
+
+            if (userHandler.UsersHandlers.ContainsKey(idRecipient) && userHandler.UsersHandlers[idRecipient].Game == null)
             {
                 byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
                 byte[] request_msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
                 userHandler.UsersHandlers[idRecipient].stream.Write(request_msg, 0, request_msg.Length);
+                Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest: success");
             }
             else
             {
@@ -190,10 +200,16 @@ namespace Serveur.Functions
                 byte[] msg_bytes = serializationResponseOpponent(idRecipient, false);
                 msg = serializationMessage(msg_bytes, NomCommande.RGR);
 
-                Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest the key {idRecipient} was not found or the user was in a match");
+                if(!userHandler.UsersHandlers.ContainsKey(idRecipient))
+                {
+                    Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest: failed, the key {idRecipient} was not found");
+                }
+                else
+                {
+                    Messaging.WriteLog(userHandler.log_file, $"*** TransferMatchRequest: failed, the user id {idRecipient} is in a match");
+                }
+                    
             }
-            
-
             return msg;
         }
 
@@ -204,11 +220,17 @@ namespace Serveur.Functions
             int idRecipient = tuple.Item1;
             bool response = tuple.Item2;
 
-            //la réponse est envoyer au destinataire
+            Messaging.WriteLog(userHandler.log_file, $"*** TransferGameRequestResponse: from {idSender} to {idRecipient}, accepted = {response}");
+
+            //la réponse est envoyée au destinataire
             byte[] msg_bytes = serializationResponseOpponent(idSender, response);
             byte[] msg_to_dest = serializationMessage(msg_bytes, NomCommande.RGR);
             userHandler.UsersHandlers[idRecipient].stream.Write(msg_to_dest, 0, msg_to_dest.Length);
 
+            //la réponse est confirmée à l'envoyeur
+            msg_bytes = serializationResponseOpponent(idRecipient, response);
+            byte[] msg_to_sender = serializationMessage(msg_bytes, NomCommande.RGR);
+            userHandler.stream.Write(msg_to_sender, 0, msg_to_sender.Length);
 
             if (response) //creation de l'objet game
             {
@@ -217,6 +239,8 @@ namespace Serveur.Functions
                 userHandler.Game = game;
                 userHandler.UsersHandlers[idRecipient].Game = game;
 
+                Messaging.WriteLog(userHandler.log_file, $"*** TransferGameRequestResponse: game object created");
+
                 //on envoie la board au destinataire
                 byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[idRecipient]);
                 userHandler.UsersHandlers[idRecipient].stream.Write(msg_board1, 0, msg_board1.Length);
@@ -224,13 +248,9 @@ namespace Serveur.Functions
                 //on envoie la board à l'envoyeur
                 byte[] msg_board2 = SendGameBoard(new byte[0], userHandler);
                 userHandler.stream.Write(msg_board2, 0, msg_board2.Length);
-
             }
 
-            
-            msg_bytes = serializationResponseOpponent(idRecipient, response);
-            byte[] msg = serializationMessage(msg_bytes, NomCommande.RGR);
-            return msg;
+            return new byte[0];
         }
         
 

@@ -17,7 +17,7 @@ namespace MyClient
     public class MyClient
     {
         public Int32 port = 13000;
-        public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+        public IPAddress localAddr = IPAddress.Parse("127.0.0.1");//127.0.0.1
 
         private Socket _socket = null;
         private IPEndPoint _remoteEP = null;
