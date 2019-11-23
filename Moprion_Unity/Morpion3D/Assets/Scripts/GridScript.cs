@@ -18,14 +18,17 @@ public class GridScript : MonoBehaviour
 
     public GameObject CubeletPrefab;
     public GameObject CrossPrefab;
+    public GameObject CrossWonPrefab;
     public GameObject TorePrefab;
+    public GameObject ToreWonPrefab;
 
     ////// Public fields/properties //////
 
     public float RotatationSpeed;
     public GameObject PlayerFillingObject { get; private set; }
     public GameObject OpponentFillingObject { get; private set; }
-
+    public GameObject PlayerWonFillingObject { get; private set; }
+    public GameObject OpponentWonFillingObject { get; private set; }
     ////// Private fields/properties //////
 
     private SharedUpdatable<Game> gameState;
@@ -33,7 +36,9 @@ public class GridScript : MonoBehaviour
     private Action updateFunction;
     
     private GameObject player1FillingObject;
+    private GameObject player1WonFillingObject;
     private GameObject player2FillingObject;
+    private GameObject player2WonFillingObject;
 
     private bool firstUpdate = true;
     private bool isPlayer1;
@@ -87,11 +92,15 @@ public class GridScript : MonoBehaviour
         {
             case EPlayerPatterns.Cross:
                 PlayerFillingObject = CrossPrefab;
+                PlayerWonFillingObject = CrossWonPrefab;
                 OpponentFillingObject = TorePrefab;
+                OpponentWonFillingObject = ToreWonPrefab;
                 break;
             case EPlayerPatterns.Tore:
                 PlayerFillingObject = TorePrefab;
+                PlayerWonFillingObject = ToreWonPrefab;
                 OpponentFillingObject = CrossPrefab;
+                OpponentWonFillingObject = CrossWonPrefab;
                 break;
             default:
                 break;
@@ -113,7 +122,9 @@ public class GridScript : MonoBehaviour
         gameState = new SharedUpdatable<Game>();
         gameState.UpdateAction = UpdateGameState;
         PlayerFillingObject = CrossPrefab;
+        PlayerWonFillingObject = CrossWonPrefab;
         OpponentFillingObject = TorePrefab;
+        OpponentWonFillingObject = ToreWonPrefab;
         mainScript = GetComponentInParent<MainScript>();
         CreateGrid();
     }
@@ -188,6 +199,8 @@ public class GridScript : MonoBehaviour
             isPlayer1 = gameState.IdPlayer1 != mainScript.Client.Opponent.Id;
             player1FillingObject = isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
             player2FillingObject = !isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
+            player1WonFillingObject = isPlayer1 ? PlayerWonFillingObject : OpponentWonFillingObject;
+            player2WonFillingObject = !isPlayer1 ? PlayerWonFillingObject : OpponentWonFillingObject;
 
             Debug.Log("FirstUpdateGameState()");
             firstUpdate = false;
@@ -206,10 +219,10 @@ public class GridScript : MonoBehaviour
                             cubelets[x, y, z].FillWith(player2FillingObject);
                             break;
                         case (int)Cell.HighlightPlayer1:
-                            cubelets[x, y, z].FillWith(player1FillingObject);
+                            cubelets[x, y, z].FillWith(player1WonFillingObject);
                             break;
                         case (int)Cell.HighlightPlayer2:
-                            cubelets[x, y, z].FillWith(player2FillingObject);
+                            cubelets[x, y, z].FillWith(player2WonFillingObject);
                             break;
                         default:
                             break;
