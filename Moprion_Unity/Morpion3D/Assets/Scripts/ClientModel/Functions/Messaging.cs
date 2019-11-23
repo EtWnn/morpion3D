@@ -166,7 +166,7 @@ namespace MyClient.Functions
             {
                 client.Opponent = user;
             }
-            var status = response ? MatchRequestEventArgs.EStatus.Accepted : MatchRequestEventArgs.EStatus.Canceled;
+            var status = response ? MatchRequestEventArgs.EStatus.Accepted : MatchRequestEventArgs.EStatus.Declined;
             client.RaiseMatchRequestUpdated(new MatchRequestEventArgs(user, status));
         }
 

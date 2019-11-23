@@ -5,10 +5,6 @@ using MyClient;
 using MyClient.Models;
 using MyClient.ModelGame;
 
-internal class GridTestClient
-{
-    public User User { get; set; }
-}
 
 public class GridScript : MonoBehaviour
 {
@@ -22,14 +18,17 @@ public class GridScript : MonoBehaviour
 
     public GameObject CubeletPrefab;
     public GameObject CrossPrefab;
+    public GameObject CrossWonPrefab;
     public GameObject TorePrefab;
+    public GameObject ToreWonPrefab;
 
     ////// Public fields/properties //////
 
     public float RotatationSpeed;
     public GameObject PlayerFillingObject { get; private set; }
     public GameObject OpponentFillingObject { get; private set; }
-
+    public GameObject PlayerWonFillingObject { get; private set; }
+    public GameObject OpponentWonFillingObject { get; private set; }
     ////// Private fields/properties //////
 
     private SharedUpdatable<Game> gameState;
@@ -37,20 +36,21 @@ public class GridScript : MonoBehaviour
     private Action updateFunction;
     
     private GameObject player1FillingObject;
+    private GameObject player1WonFillingObject;
     private GameObject player2FillingObject;
-
-    private OptionsMenu optionsMenu;
+    private GameObject player2WonFillingObject;
 
     private bool firstUpdate = true;
     private bool isPlayer1;
 
-    private GridTestClient client;
+    private MainScript mainScript;
 
     ////// Public methods //////
 
     public void SetActive(bool value) => gameObject.SetActive(value);
 
     ////// Events Handlers //////
+
 
     public void OnStateChange(object sender, EventArgs e)
     {
@@ -92,11 +92,15 @@ public class GridScript : MonoBehaviour
         {
             case EPlayerPatterns.Cross:
                 PlayerFillingObject = CrossPrefab;
+                PlayerWonFillingObject = CrossWonPrefab;
                 OpponentFillingObject = TorePrefab;
+                OpponentWonFillingObject = ToreWonPrefab;
                 break;
             case EPlayerPatterns.Tore:
                 PlayerFillingObject = TorePrefab;
+                PlayerWonFillingObject = ToreWonPrefab;
                 OpponentFillingObject = CrossPrefab;
+                OpponentWonFillingObject = CrossWonPrefab;
                 break;
             default:
                 break;
@@ -118,11 +122,10 @@ public class GridScript : MonoBehaviour
         gameState = new SharedUpdatable<Game>();
         gameState.UpdateAction = UpdateGameState;
         PlayerFillingObject = CrossPrefab;
+        PlayerWonFillingObject = CrossWonPrefab;
         OpponentFillingObject = TorePrefab;
-
-        client = new GridTestClient();
-        client.User = new User(123456, "JohnDoe");
-        
+        OpponentWonFillingObject = ToreWonPrefab;
+        mainScript = GetComponentInParent<MainScript>();
         CreateGrid();
     }
 
@@ -172,6 +175,8 @@ public class GridScript : MonoBehaviour
                 {
                     var cubelet = Instantiate(CubeletPrefab, new Vector3(x - 1, y - 1, z - 1), new Quaternion(0, 0, 0, 0), transform);
                     var cubeletScript = cubelet.GetComponent<CubeletScript>();
+                    cubeletScript.Position = new System.Numerics.Vector3(x, y, z);
+                    cubeletScript.Clicked += OnCubeletClicked;
                     GetComponentInParent<MainScript>().StateChange += cubeletScript.OnStateChange;
                     cubelets[x, y, z] = cubeletScript;
                 }
@@ -188,8 +193,18 @@ public class GridScript : MonoBehaviour
 
     private void UpdateGameState(Game gameState)
     {
+        Debug.Log("In: UpdateGameState()");
         if(firstUpdate)
-            isPlayer1 = gameState.IdPlayer1 == client.User.Id;
+        {
+            isPlayer1 = gameState.IdPlayer1 != mainScript.Client.Opponent.Id;
+            player1FillingObject = isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
+            player2FillingObject = !isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
+            player1WonFillingObject = isPlayer1 ? PlayerWonFillingObject : OpponentWonFillingObject;
+            player2WonFillingObject = !isPlayer1 ? PlayerWonFillingObject : OpponentWonFillingObject;
+
+            Debug.Log("FirstUpdateGameState()");
+            firstUpdate = false;
+        }
 
         /// Updating whole grid crosses and tores
         for (var x = 0; x < 3; x++)
@@ -204,14 +219,17 @@ public class GridScript : MonoBehaviour
                             cubelets[x, y, z].FillWith(player2FillingObject);
                             break;
                         case (int)Cell.HighlightPlayer1:
-                            cubelets[x, y, z].FillWith(player1FillingObject);
+                            cubelets[x, y, z].FillWith(player1WonFillingObject);
                             break;
                         case (int)Cell.HighlightPlayer2:
-                            cubelets[x, y, z].FillWith(player2FillingObject);
+                            cubelets[x, y, z].FillWith(player2WonFillingObject);
                             break;
                         default:
                             break;
                     }
+
+        Debug.Log("Game grid updated!");
+
 
         switch (gameState.Mode)
         {
@@ -230,6 +248,9 @@ public class GridScript : MonoBehaviour
             default:
                 break;
         }
+
+        Debug.Log("Game mode changed!");
+
     }
 
     private void SetPlayerTurn(bool isPlayerTurn)

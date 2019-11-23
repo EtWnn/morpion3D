@@ -47,6 +47,10 @@ MonoBehaviour:
     type: 3}
   CrossPrefab: {fileID: 3031324473766081669, guid: 3693fc174fea8264696ce462c1a65f1d,
     type: 3}
+  CrossWonPrefab: {fileID: 4249947730625229335, guid: 16bd4d64e8386474d830158ec4e34c1a,
+    type: 3}
   TorePrefab: {fileID: 1501269488972476111, guid: 47c5d35d9277541489717debb6ffc604,
+    type: 3}
+  ToreWonPrefab: {fileID: 4607297521289817565, guid: ffd9d522904329f4d9210327c0bc2a26,
     type: 3}
   RotatationSpeed: 0

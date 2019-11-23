@@ -43,7 +43,7 @@ public class MainScript : MonoBehaviour
 
     private Dictionary<object, bool> gameReadyEventsState;
 
-    Client client;
+    public Client Client { get; private set; }
 
     private void Awake()
     {
@@ -53,7 +53,7 @@ public class MainScript : MonoBehaviour
         UIControllerPrefab = Instantiate(UIControllerPrefab, transform);
 
         Client.InnitMethods();
-        client = new Client();
+        Client = new Client();
         
     }
 
@@ -80,24 +80,24 @@ public class MainScript : MonoBehaviour
         gameReadyEventsState.Add(gridScript, false);
         gameReadyEventsState.Add(cameraScript, false);
 
-        client.Connected += uiControllerScript.OnlineStatusOverlay.OnConnected;
-        client.Disconnected += uiControllerScript.OnlineStatusOverlay.OnDisconnected;
+        Client.Connected += uiControllerScript.OnlineStatusOverlay.OnConnected;
+        Client.Disconnected += uiControllerScript.OnlineStatusOverlay.OnDisconnected;
 
-        uiControllerScript.OpponentsMenu.UpdatingOpponentList += client.OnMatchUpdatingOpponentList;
-        client.OpponentListUpdated += uiControllerScript.OpponentsMenu.OnOpponentListUpdated;
+        uiControllerScript.OpponentsMenu.UpdatingOpponentList += Client.OnMatchUpdatingOpponentList;
+        Client.OpponentListUpdated += uiControllerScript.OpponentsMenu.OnOpponentListUpdated;
 
-        client.MatchRequestUpdated += uiControllerScript.MatchRequestHandler.OnMatchRequestUpdated;
-        uiControllerScript.MatchRequestHandler.MatchRequestUpdated += client.OnMatchRequestUpdated;
+        Client.MatchRequestUpdated += uiControllerScript.MatchRequestHandler.OnMatchRequestUpdated;
+        uiControllerScript.MatchRequestHandler.MatchRequestUpdated += Client.OnMatchRequestUpdated;
 
-        client.GameUpdated += gridScript.OnGameUpdated;
-        gridScript.PositionPlayed += client.OnPositionPlayed;
+        Client.GameUpdated += gridScript.OnGameUpdated;
+        gridScript.PositionPlayed += Client.OnPositionPlayed;
 
         State = EState.InMainMenu;
 
-        client.port = 13000;
-        client.localAddr = System.Net.IPAddress.Parse("138.195.241.26");
+        Client.port = 13000;
+        Client.localAddr = System.Net.IPAddress.Parse("127.0.0.1");
 
-        client.tryConnect();
+        Client.tryConnect();
         //StartCoroutine(IERepeatTryConnect(100));
     }
 

@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Collections;
 using UnityEngine;
+using System.Collections.Generic;
 
 public static class Utils
 {
@@ -181,7 +182,7 @@ public class SharedUpdatable<T>
             {
                 UpdateAction(data);
                 processed = true;
-                upToDate = false;
+                upToDate = true;
             }
         }
 
@@ -292,4 +293,34 @@ public static class CoroutineExtensions
         coroutineController.StartCoroutine(monoBehaviour);
         return coroutineController;
     }
+}
+
+public class EventWrapper<T>
+{
+    private event EventHandler<T> _event;
+    private List<EventHandler<T>> _subscribedEventHandlers = new List<EventHandler<T>>();
+
+    public void Subscribe(EventHandler<T> eventHandler)
+    {
+        _event += eventHandler;
+        _subscribedEventHandlers.Add(eventHandler);
+    }
+
+    public void Unsubscribe(EventHandler<T> eventHandler)
+    {
+        if (_subscribedEventHandlers.Contains(eventHandler))
+        {
+            _event -= eventHandler;
+            _subscribedEventHandlers.Remove(eventHandler);
+        }
+    }
+
+    public void UnsubscribeAll()
+    {
+        foreach (var eventHandler in _subscribedEventHandlers)
+            _event -= eventHandler;
+        _subscribedEventHandlers.Clear();
+    }
+
+    public void Invoke(object sender, T e) => _event?.Invoke(sender, e);
 }

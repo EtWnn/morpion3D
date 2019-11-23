@@ -165,11 +165,11 @@ namespace Serveur.Functions
         public static byte[] SendGameBoard(byte[] bytes, UserHandler userHandler) //bytes inutile mais necessaire pour etre mis dans le dico
         {
             byte[] bytesGame = Serialization.SerializationMatchStatus(userHandler.Game);
-            if (!(userHandler.Game.Mode == GameMode.Player1 || userHandler.Game.Mode == GameMode.Player2))
+            /*if (!(userHandler.Game.Mode == GameMode.Player1 || userHandler.Game.Mode == GameMode.Player2))
             {
                 userHandler.Game = null;
-            }
-
+            }*/
+            // le jeu ne doit pas etre detruit si le mode est autre que Player 1 ou Player 2 car unity doit pouvoir afficher player1Won ou player2won
             byte[] response = serializationMessage(bytesGame, NomCommande.DGB);
             Messaging.WriteLog(userHandler.log_file, $"*** SendGameBoard: to user id {userHandler.Id}");
             return response;
@@ -238,6 +238,7 @@ namespace Serveur.Functions
                 game.SpecifyPlayersID(idSender, idRecipient);
                 userHandler.Game = game;
                 userHandler.UsersHandlers[idRecipient].Game = game;
+                userHandler.UsersHandlers[idSender].Game = game;
 
                 Messaging.WriteLog(userHandler.log_file, $"*** TransferGameRequestResponse: game object created");
 
