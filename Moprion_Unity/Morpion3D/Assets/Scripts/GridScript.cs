@@ -11,7 +11,7 @@ public class GridScript : MonoBehaviour
     ////// Events //////
 
     public event EventHandler ReadyGame;
-    public event EventHandler<TEventArgs<bool>> PlayerTurn;
+    public event EventHandler<TEventArgs<PlayerEstate>> PlayerTurn;
     public event EventHandler<TEventArgs<System.Numerics.Vector3>> PositionPlayed;
 
     ////// Prefabs //////
@@ -49,6 +49,13 @@ public class GridScript : MonoBehaviour
 
     public void SetActive(bool value) => gameObject.SetActive(value);
 
+    public enum PlayerEstate
+    {
+        IsTurn,
+        NotIsTurn,
+        Won,
+        Lose
+    }
     ////// Events Handlers //////
 
 
@@ -234,14 +241,16 @@ public class GridScript : MonoBehaviour
         switch (gameState.Mode)
         {
             case GameMode.Player1:
-                SetPlayerTurn(isPlayer1);
+                SetPlayerTurn(isPlayer1? PlayerEstate.IsTurn : PlayerEstate.NotIsTurn);
                 break;
             case GameMode.Player2:
-                SetPlayerTurn(!isPlayer1);
+                SetPlayerTurn(!isPlayer1 ? PlayerEstate.IsTurn : PlayerEstate.NotIsTurn);
                 break;
             case GameMode.Player1Won:
+                SetPlayerTurn(isPlayer1 ? PlayerEstate.Won : PlayerEstate.Lose);
                 break;
             case GameMode.Player2Won:
+                SetPlayerTurn(!isPlayer1 ? PlayerEstate.Won : PlayerEstate.Lose);
                 break;
             case GameMode.NoneWon:
                 break;
@@ -253,8 +262,8 @@ public class GridScript : MonoBehaviour
 
     }
 
-    private void SetPlayerTurn(bool isPlayerTurn)
+    private void SetPlayerTurn(PlayerEstate playerEstate)
     {
-        PlayerTurn?.Invoke(this, new TEventArgs<bool>(isPlayerTurn));
+        PlayerTurn?.Invoke(this, new TEventArgs<PlayerEstate>(playerEstate));
     }
 }

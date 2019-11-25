@@ -7,6 +7,8 @@ using System;
 
 public class TurnIndicator : MonoBehaviour
 {
+    private const string PlayerWonText = "<color=#66FFD9><size=110%>You</size=150%></color=#66FFD9> won !";
+    private const string PlayerLoseText = "<color=#66FFD9><size=110%>You</size=150%></color=#66FFD9> lose !";
     private const string PlayerTurnText = "<color=#66FFD9><size=110%>Your</size=150%></color=#66FFD9> turn !";
     private const string OpponentTurnText = "<color=#66FFD9><size=110%>Opponent's</size=150%></color=#66FFD9> turn !";
     
@@ -24,17 +26,26 @@ public class TurnIndicator : MonoBehaviour
 
     public void SetActive(bool value) => gameObject.SetActive(value);
 
-    public void SetTurn(bool isPlayerTurn)
+    public void SetTurn(GridScript.PlayerEstate playerEstate)
     {
-        if (isPlayerTurn)
+        switch(playerEstate)
         {
-            Text = PlayerTurnText;
-            SetBackgroundActive(false);
-        }
-        else
-        {
-            Text = OpponentTurnText;
-            SetBackgroundActive(true);
+            case (GridScript.PlayerEstate.IsTurn):
+                Text = PlayerTurnText;
+                SetBackgroundActive(false);
+                break;
+            case (GridScript.PlayerEstate.NotIsTurn):
+                Text = OpponentTurnText;
+                SetBackgroundActive(true);
+                break;
+            case (GridScript.PlayerEstate.Won):
+                Text = PlayerWonText;
+                SetBackgroundActive(true);
+                break;
+            case (GridScript.PlayerEstate.Lose):
+                Text = PlayerLoseText;
+                SetBackgroundActive(true);
+                break;
         }
     }
 

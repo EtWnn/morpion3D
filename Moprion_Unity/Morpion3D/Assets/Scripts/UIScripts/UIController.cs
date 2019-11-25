@@ -86,7 +86,7 @@ public class UIController : MonoBehaviour
 
     private void OnSubMenuExiting(object sender, EventArgs e) => State = EStateUI.InMainMenu;
 
-    public void OnGameTurnChanged(object sender, TEventArgs<bool> e)
+    public void OnGameTurnChanged(object sender, TEventArgs<GridScript.PlayerEstate> e)
     {
         TurnIndicator.SetTurn(e.Data);
     }
