@@ -26,6 +26,7 @@ namespace MyClient
         private IPEndPoint _remoteEP = null;
         private bool _continueListen = false;
         private Thread _listeningThread = null;
+        private Thread _pingThread = null;
         public NetworkStream Stream = null;
 
         public event EventHandler Connected;
@@ -85,6 +86,10 @@ namespace MyClient
                     this._listeningThread = new Thread(() => this.Listen(this.Stream));
                     this._listeningThread.Start();
 
+                    //launching the ping thread
+                    this._pingThread = new Thread(() => this.Ping(this.Stream));
+                    this._pingThread.Start();
+
                     is_connected = true;
                     Connected?.Invoke(this, EventArgs.Empty);
                 }
@@ -104,6 +109,24 @@ namespace MyClient
                 Disconnected?.Invoke(this, EventArgs.Empty);
             }
         }
+
+        void Ping(NetworkStream stream)
+        {
+            while (this._continueListen)
+            {
+                try
+                {
+                    Messaging.SendPing(stream);
+                }
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                {
+                    Debug.Log("try disconnect with ping method");
+                    this._continueListen = false;
+                    tryDisconnect();
+                }
+                Thread.Sleep(1000);
+            }
+        }           
 
         void Listen(NetworkStream stream)
         {
@@ -162,6 +185,7 @@ namespace MyClient
         
         internal void RaiseOpponentDisconnected()
         {
+            this.GameClient = null;
             OpponentDisconnected?.Invoke(this, EventArgs.Empty);
         }
 

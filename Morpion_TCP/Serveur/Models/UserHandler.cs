@@ -21,6 +21,7 @@ namespace Serveur.Models
             methods[NomCommande.DGB] = Messaging.SendGameBoard;
             methods[NomCommande.MRQ] = Messaging.TransferMatchRequest;
             methods[NomCommande.GRR] = Messaging.TransferGameRequestResponse;
+            methods[NomCommande.PNG] = Messaging.RecievePing;
         }
 
 

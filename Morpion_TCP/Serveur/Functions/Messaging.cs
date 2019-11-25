@@ -20,7 +20,8 @@ namespace Serveur.Functions
         MRQ,
         GRR,
         RGR,
-        NDC
+        NDC,
+        PNG
     }
 
     public class Messaging
@@ -94,6 +95,12 @@ namespace Serveur.Functions
         {
             string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
             Console.WriteLine($" >> message recieved from client {userHandler.UserName} Id {userHandler.Id} : {message}");
+            return new byte[0];
+        }
+
+        public static byte[] RecievePing(byte[] bytes, UserHandler userHandler)
+        {
+            Console.WriteLine($" >> ping recieved from client {userHandler.UserName} Id {userHandler.Id}");
             return new byte[0];
         }
 
