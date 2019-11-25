@@ -49,11 +49,11 @@ public static class Utils
         Func<float, float> F = (float x) => x;
 
         if (smoothed)
-            F = (float x) => 6 * Mathf.Pow(x, 2) * (duration / 2 - x / 3) / Mathf.Pow(duration, 3);
+            F = (float x) => 2 * Mathf.Pow(x, 2) * (1.5f - x);
 
         float t = 0;
         float dt = Time.timeScale / duration;
-        while ((t += dt) < 1)
+        while ((t += dt * Time.deltaTime) < 1)
         {
             var Ft = F(t);
             yield return new Tuple<Vector3, Quaternion>(

@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using MyClient.Functions;
 using MyClient.Models;
 using MyClient.ModelGame;
-using System.Numerics;
-
 using UnityEngine;
-using System.Numerics;
 
 namespace MyClient
 {
@@ -75,27 +69,43 @@ namespace MyClient
                 this._remoteEP = new IPEndPoint(this.localAddr, this.port);
                 this._socket = new Socket(this.localAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-                //connection to the server
-                this._socket.Connect(this._remoteEP);
-                if (this._socket.Connected)
+                try
                 {
-                    this.Stream = new NetworkStream(this._socket);
-                    this.Stream.ReadTimeout = 10;
+                    //connection to the server
+                    this._socket.Connect(this._remoteEP);
+                    if (this._socket.Connected)
+                    {
+                        this.Stream = new NetworkStream(this._socket);
+                        this.Stream.ReadTimeout = 10;
 
-                    //launching the listening thread
-                    this._listeningThread = new Thread(() => this.Listen(this.Stream));
-                    this._listeningThread.Start();
+                        //launching the listening thread
+                        this._listeningThread = new Thread(() => this.Listen(this.Stream));
+                        this._listeningThread.IsBackground = true;
+                        this._listeningThread.Start();
 
-                    //launching the ping thread
-                    this._pingThread = new Thread(() => this.Ping(this.Stream));
-                    this._pingThread.Start();
+                        //launching the ping thread
+                    	this._pingThread = new Thread(() => this.Ping(this.Stream));
+                    	this._pingThread..IsBackground = true;
+                    	this._pingThread.Start();
 
-                    is_connected = true;
-                    Connected?.Invoke(this, EventArgs.Empty);
+                        is_connected = true;
+                        Debug.Log("Before Connected event");
+                        Connected?.Invoke(this, EventArgs.Empty);
+                        Debug.Log("After Connected event");
+                    }
+                }
+                catch (SocketException)
+                {
                 }
             }
-            
-            
+        }
+
+        ~Client()
+        {
+            if (this._socket == null || !this._socket.Connected)
+            {
+                this._socket.Close();
+            }
         }
 
         public void tryDisconnect()
@@ -142,7 +152,7 @@ namespace MyClient
                     {
                         NombreOctets = stream.Read(bytes, 0, bytes.Length);
                     }
-                    catch (IOException ex)
+                    catch (IOException)
                     {
                         NombreOctets = 0;
                     }

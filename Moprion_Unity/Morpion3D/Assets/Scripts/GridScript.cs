@@ -29,6 +29,7 @@ public class GridScript : MonoBehaviour
     public GameObject OpponentFillingObject { get; private set; }
     public GameObject PlayerWonFillingObject { get; private set; }
     public GameObject OpponentWonFillingObject { get; private set; }
+
     ////// Private fields/properties //////
 
     private SharedUpdatable<Game> gameState;
@@ -74,6 +75,7 @@ public class GridScript : MonoBehaviour
                 updateFunction = NotInGameBehaviour;
                 break;
             case EState.ToMenu:
+                ResetGrid();
                 updateFunction = NotInGameBehaviour;
                 break;
             default:
@@ -187,6 +189,14 @@ public class GridScript : MonoBehaviour
                     GetComponentInParent<MainScript>().StateChange += cubeletScript.OnStateChange;
                     cubelets[x, y, z] = cubeletScript;
                 }
+    }
+
+    private void ResetGrid()
+    {
+        for (var x = 0; x < 3; x++)
+            for (var y = 0; y < 3; y++)
+                for (var z = 0; z < 3; z++)
+                    cubelets[x, y, z].ResetCubelet();
     }
 
     private void SetExternCubeletsActive(bool active)
