@@ -19,7 +19,8 @@ namespace MyClient.Functions
         NPP, //New position played 
         DGB, // game board
         GRR, // request response
-        RGR // recieve game request
+        RGR, // recieve game request
+        NDC // notification opponent disconnected
         //RQS, //
 
     }
@@ -230,6 +231,11 @@ namespace MyClient.Functions
         public static void RecieveGameBoard(byte[] bytes, Client client)
         {
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
+        }
+
+        public static void RecieveOpponentDisconnection(byte[] bytes, Client client)
+        {
+            client.RaiseOpponentDisconnected();
         }
     }
 }

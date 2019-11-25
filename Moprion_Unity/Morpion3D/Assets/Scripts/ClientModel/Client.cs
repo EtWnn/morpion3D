@@ -33,6 +33,7 @@ namespace MyClient
         public event EventHandler GameUpdated;
         public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
         public event EventHandler<TEventArgs<List<User>>> OpponentListUpdated;
+        public event EventHandler OpponentDisconnected;
 
 
         public bool is_connected = false;
@@ -63,6 +64,7 @@ namespace MyClient
             methods[NomCommande.RGR] = Messaging.RecieveGameRequestStatus;
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
+            methods[NomCommande.NDC] = Messaging.RecieveOpponentDisconnection;
         }
 
         public void tryConnect()
@@ -158,6 +160,10 @@ namespace MyClient
             }
         }
         
+        internal void RaiseOpponentDisconnected()
+        {
+            OpponentDisconnected?.Invoke(this, EventArgs.Empty);
+        }
 
         internal void RaiseMatchRequestUpdated(MatchRequestEventArgs matchRequestEventArgs)
         {

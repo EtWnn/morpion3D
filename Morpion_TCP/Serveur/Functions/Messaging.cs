@@ -19,7 +19,8 @@ namespace Serveur.Functions
         DGB,
         MRQ,
         GRR,
-        RGR
+        RGR,
+        NDC
     }
 
     public class Messaging
@@ -252,6 +253,16 @@ namespace Serveur.Functions
             }
 
             return new byte[0];
+        }
+
+        public static void SendNotifcationDisconnection(NetworkStream stream, UserHandler userHandler)
+        {
+            int idSender = userHandler.Id;
+            int idRecipient = (userHandler.Id == userHandler.Game.IdPlayer1)? userHandler.Game.IdPlayer2 : userHandler.Game.IdPlayer1;
+            byte[] msg_serialized=serializationMessage(new byte[0], NomCommande.NDC);
+            Messaging.WriteLog(userHandler.log_file, $"*** SendNotifcationDisconnection: try from {idSender} to {idRecipient}");
+             userHandler.UsersHandlers[idRecipient].stream.Write(msg_serialized, 0, msg_serialized.Length);
+            Messaging.WriteLog(userHandler.log_file, $"*** SendNotifcationDisconnection: success");
         }
         
 

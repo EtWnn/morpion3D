@@ -113,16 +113,24 @@ namespace Serveur.Models
 
                     
                 }
-                catch (System.Net.Sockets.SocketException ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
+                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
                 {
-                    continuer = false;
-                    Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
-
-                    if(Game != null) //si le joueur était en jeu
+                    if(ex is System.IO.IOException || ex is System.Net.Sockets.SocketException)
                     {
-                        // à faire: prévenir l'autre joueur
+                        continuer = false;
+                        Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
 
-                        Game = null;
+                        if(Game != null) //si le joueur était en jeu
+                        {
+                            Messaging.SendNotifcationDisconnection(stream, this);
+                            // à faire: prévenir l'autre joueur
+
+                            Game = null;
+                        }
+                    }
+                    else
+                    {
+                        throw;
                     }
                 }
             }
