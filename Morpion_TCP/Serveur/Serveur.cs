@@ -81,6 +81,11 @@ namespace Serveur
                 _next_id++;
 
             }
+
+            foreach (var userHandler in _userHandlers.Values)
+            {
+                userHandler.KeepChatting = false;
+            }
         }
 
         static void Main(string[] args)

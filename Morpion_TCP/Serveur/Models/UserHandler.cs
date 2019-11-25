@@ -43,12 +43,12 @@ namespace Serveur.Models
                 
             }
         }
-        
-
-        
-        
 
 
+
+
+
+        public bool KeepChatting;
         public int Id { get; private set; }
         public string UserName { get; set; }
         public NetworkStream stream;
@@ -65,7 +65,7 @@ namespace Serveur.Models
             this.UsersHandlers = userHandlers;
             this.usersMutex = usersMutex;
             this.log_file = log_file;
-
+            this.KeepChatting = true;
 
 
         }
@@ -78,11 +78,10 @@ namespace Serveur.Models
 
         private void DoChat()
         {
-            bool continuer = true;
             stream = this.clientSocket.GetStream();
             Messaging.SendMessage(stream, "Hi new user! You have been assigned the id " + this.Id.ToString() );
 
-            while (continuer)
+            while (KeepChatting)
             {
                 
                 try
@@ -113,9 +112,9 @@ namespace Serveur.Models
 
                     
                 }
-                catch (System.IO.IOException ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
+                catch (System.IO.IOException ex) //à faire: prendre en compte la fermeture inatendue du canal par le client
                 {
-                    continuer = false;
+                    KeepChatting = false;
                     Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
 
                     if(Game != null) //si le joueur était en jeu
@@ -124,6 +123,8 @@ namespace Serveur.Models
 
                         Game = null;
                     }
+
+                    this.clientSocket.Close();
                 }
             }
 
