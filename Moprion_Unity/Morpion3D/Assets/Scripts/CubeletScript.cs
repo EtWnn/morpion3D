@@ -45,6 +45,13 @@ public class CubeletScript : MonoBehaviour
         }
     }
 
+    public void ResetCubelet()
+    {
+        if (CurrentFillingObject != null)
+            Destroy(CurrentFillingObject);
+        Filled = false;
+    }
+
     public void FillWith(GameObject prefab)
     {
         if (Filled)

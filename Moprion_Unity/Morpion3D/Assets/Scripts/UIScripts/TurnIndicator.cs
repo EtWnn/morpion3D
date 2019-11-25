@@ -7,6 +7,8 @@ using System;
 
 public class TurnIndicator : MonoBehaviour
 {
+    public event EventHandler Exiting;
+
     private const string PlayerWonText = "<color=#66FFD9><size=110%>You</size=150%></color=#66FFD9> won !";
     private const string PlayerLoseText = "<color=#66FFD9><size=110%>You</size=150%></color=#66FFD9> lose !";
     private const string PlayerTurnText = "<color=#66FFD9><size=110%>Your</size=150%></color=#66FFD9> turn !";
@@ -19,10 +21,10 @@ public class TurnIndicator : MonoBehaviour
         set => _tmpText.text = value;
     }
 
+    public float TextCoroutinePerid = 1f;
+    public Button BackButton { get; private set; }
 
     private Image background;
-
-    public float TextCoroutinePerid = 1f;
 
     public void SetActive(bool value) => gameObject.SetActive(value);
 
@@ -41,10 +43,12 @@ public class TurnIndicator : MonoBehaviour
             case (GridScript.PlayerEstate.Won):
                 Text = PlayerWonText;
                 SetBackgroundActive(true);
+                BackButton.gameObject.SetActive(true);
                 break;
             case (GridScript.PlayerEstate.Lose):
                 Text = PlayerLoseText;
                 SetBackgroundActive(true);
+                BackButton.gameObject.SetActive(true);
                 break;
         }
     }
@@ -55,16 +59,16 @@ public class TurnIndicator : MonoBehaviour
     {
         _tmpText = GetComponentInChildren<TextMeshProUGUI>();
         background = GetComponent<Image>();
+        BackButton = GetComponentInChildren<Button>(true);
+        Debug.Log("BackButton: " + BackButton);
     }
 
-    private IEnumerator IESuspensionPointsAnim()
+    private void Start()
     {
-        var cnt = 0;
-        while(true)
+        BackButton.onClick.AddListener(() =>
         {
-            Text = OpponentTurnText + new String('.', ++cnt);
-            if (cnt == 3)
-                cnt = 0;
-        }
+            Exiting?.Invoke(this, EventArgs.Empty);
+            BackButton.gameObject.SetActive(false);
+        });
     }
 }

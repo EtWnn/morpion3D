@@ -18,6 +18,7 @@ public enum EState
 
 public class MainScript : MonoBehaviour
 {
+    public event EventHandler StateChange;
     private EState _state;
     public EState State 
     { 
@@ -26,12 +27,10 @@ public class MainScript : MonoBehaviour
         { 
             Debug.Log($"State change: {_state} to {value}");
             _state = value;
-            OnStateChange();
+            StateChange?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    public event EventHandler StateChange;
-    
     public GameObject CameraHandlerPrefab;
     private CameraScript cameraScript;
 
@@ -44,6 +43,8 @@ public class MainScript : MonoBehaviour
     private Dictionary<object, bool> gameReadyEventsState;
 
     public Client Client { get; private set; }
+
+    private CoroutineController TryConnectCO { get; set; }
 
     private void Awake()
     {
@@ -69,6 +70,9 @@ public class MainScript : MonoBehaviour
         StateChange += uiControllerScript.OnMainStateChange;
 
         uiControllerScript.ReadyToGame += (sender, e) => State = EState.ToGame;
+        uiControllerScript.ReadyToMenu += (sender, e) => State = EState.ToMenu;
+        cameraScript.ReadyMenu += (sender, e) => State = EState.InMainMenu;
+
         uiControllerScript.OptionsMenu.PlayerPatternChanged += gridScript.OnPlayerPatternChanged;
 
         gridScript.PlayerTurn += uiControllerScript.OnGameTurnChanged;
@@ -76,12 +80,16 @@ public class MainScript : MonoBehaviour
         cameraScript.ReadyGame += OnGameReadyEvents;
         gridScript.ReadyGame += OnGameReadyEvents;
 
+
         gameReadyEventsState = new Dictionary<object, bool>();
         gameReadyEventsState.Add(gridScript, false);
         gameReadyEventsState.Add(cameraScript, false);
 
         Client.Connected += uiControllerScript.OnlineStatusOverlay.OnConnected;
+        Client.Connected += (sender, e) => TryConnectCO.Pause();
+
         Client.Disconnected += uiControllerScript.OnlineStatusOverlay.OnDisconnected;
+        Client.Disconnected += (sender, e) => TryConnectCO.Resume();
 
         uiControllerScript.OpponentsMenu.UpdatingOpponentList += Client.OnMatchUpdatingOpponentList;
         Client.OpponentListUpdated += uiControllerScript.OpponentsMenu.OnOpponentListUpdated;
@@ -96,20 +104,7 @@ public class MainScript : MonoBehaviour
 
         Client.port = 13000;
         Client.localAddr = System.Net.IPAddress.Parse("127.0.0.1");
-
-        Client.tryConnect();
-        //StartCoroutine(IERepeatTryConnect(100));
-    }
-
-    void StartGame()
-    {
-        State = EState.ToGame;
-    }
-
-    void OnStateChange()
-    {
-        if (StateChange != null)
-            StateChange(this, EventArgs.Empty);
+        TryConnectCO = CoroutineExtensions.StartCoroutineEx(this, IERepeatTryConnect(1f));
     }
 
     void OnGameReadyEvents(object sender, EventArgs args)
@@ -120,19 +115,16 @@ public class MainScript : MonoBehaviour
             State = EState.InGame;
     }
 
-    //void OnConnected(object sender, EventArgs e)
-    //{
-    //    StopCoroutine()
-    //}
-
-    //IEnumerator IERepeatTryConnect(float period)
-    //{
-    //    while(!client.is_connected)
-    //    {
-    //        client.tryConnect();
-    //        yield return new WaitForSeconds(period);
-    //    }
-    //    yield break;
-    //}
+    IEnumerator IERepeatTryConnect(float period)
+    {
+        yield return null; // Needed in case client connect on first try to prevent Error when trying to pause coroutine afterward
+        while (true)
+        {
+            Debug.Log("Client: " + Client);
+            Client.tryConnect();
+            yield return new WaitForSeconds(period);
+            Debug.Log("Client: " + Client);
+        }
+    }
 }
 

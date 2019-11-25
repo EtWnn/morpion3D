@@ -23,39 +23,24 @@ public class CameraScript : MonoBehaviour
         transform.position = menuPosition;
     }
 
-    void Start()
-    {
-    }
-
-    void Update()
-    {
-        UpdateFunction();
-    }
+    void Update() => UpdateFunction();
 
     public void OnStateChange(object sender, EventArgs args)
     {
         MainScript ms = sender as MainScript;
+        UpdateFunction = NoOpBehaviour;
         switch (ms.State)
         {
             case EState.ToMenu:
-                UpdateFunction = ToMenuBehaviour;
+                StartCoroutine(ToMenuCoroutine());
                 break;
             case EState.ToGame:
-                UpdateFunction = ToGameBehaviour;
+                StartCoroutine(ToGameCoroutine());
                 break;
             case EState.InGame:
                 UpdateFunction = InGameBehaviour;
                 break;
-            default:
-                UpdateFunction = NoOpBehaviour;
-                break;
         }
-    }
-
-    private void ToGameBehaviour()
-    {
-        StartCoroutine("ToGameCoroutine");
-        UpdateFunction = NoOpBehaviour;
     }
 
     IEnumerator ToGameCoroutine()
@@ -67,29 +52,26 @@ public class CameraScript : MonoBehaviour
             transform.position = (Vector3)itPosition.Current;
             yield return null;
         }
-        OnReadyGame();
+        ReadyGame?.Invoke(this, EventArgs.Empty);
         yield break;
     }
 
-    private void ToMenuBehaviour()
+    IEnumerator ToMenuCoroutine()
     {
         var itPosition = Utils.LerpMoveAndRotate(
             transform.position, transform.rotation,
             menuPosition, Quaternion.identity,
             CameraTransitionTime, true);
 
-        if (itPosition.MoveNext())
+        while (itPosition.MoveNext())
         {
             var pair = (Tuple<Vector3, Quaternion>)itPosition.Current;
             transform.position = pair.Item1;
             transform.rotation = pair.Item2;
+            yield return null;
         }
-        else
-        {
-            Debug.Log("Camera finished ToMenu!");
-            OnReadyMenu();
-            UpdateFunction = NoOpBehaviour;
-        }
+        ReadyMenu?.Invoke(this, EventArgs.Empty);
+        yield break;
     }
 
     private void InGameBehaviour()
@@ -107,17 +89,5 @@ public class CameraScript : MonoBehaviour
 
     private void NoOpBehaviour()
     {
-    }
-
-    private void OnReadyGame()
-    {
-        if (ReadyGame != null)
-            ReadyGame(this, EventArgs.Empty);
-    }
-
-    private void OnReadyMenu()
-    {
-        if (ReadyMenu != null)
-            ReadyMenu(this, EventArgs.Empty);
     }
 }
