@@ -16,7 +16,6 @@ namespace MyClient.Functions
         USN, //username
         OUS, //other users
         MRQ, //match request
-        RQS,
         NPP, //New position played 
         DGB, // game board
         GRR, // request response

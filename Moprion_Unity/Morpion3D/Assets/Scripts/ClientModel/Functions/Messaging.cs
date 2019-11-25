@@ -117,7 +117,12 @@ namespace MyClient.Functions
         }
 
         // General commands
-        
+        public static void RecieveMessage(byte[] bytes, Client client)
+        {
+            string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+            WriteLog(client.log_file, "message recieved from the server: " + message);
+        }
+
         public static void AskOtherUsers(NetworkStream stream)
         {
             byte[] msg = serializationMessage(NomCommande.OUS);
@@ -230,6 +235,17 @@ namespace MyClient.Functions
         public static void RecieveGameBoard(byte[] bytes, Client client)
         {
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
+        }
+
+        public static void WriteLog(string log_file, string log)
+        {
+            DateTime localDate = DateTime.Now;
+            string log_date = localDate.ToString("s");
+            using (System.IO.StreamWriter file =
+            new System.IO.StreamWriter(log_file, true))
+            {
+                file.WriteLine(log_date + " " + log);
+            }
         }
     }
 }

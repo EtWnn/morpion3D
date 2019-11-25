@@ -13,6 +13,7 @@ namespace MyClient
 {
     public class Client
     {
+        public readonly string log_file;
         public Int32 port = 13000;
         public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
@@ -57,6 +58,15 @@ namespace MyClient
             methods[NomCommande.RGR] = Messaging.RecieveGameRequestStatus;
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
+            methods[NomCommande.MSG] = Messaging.RecieveMessage;
+        }
+
+        public Client()
+        {
+            string to_date_string = DateTime.Now.ToString("s");
+            log_file = "client_log_" + to_date_string + ".txt";
+            log_file = log_file.Replace(':', '_');
+            Console.WriteLine($" log_file : {log_file}");
         }
 
         public void tryConnect()
@@ -105,7 +115,7 @@ namespace MyClient
             if (this._socket != null && this._socket.Connected)
             {
                 this._continueListen = false;
-                this._socket.Disconnect(false);
+                this._socket.Close();
 
                 is_connected = false;
                 Disconnected?.Invoke(this, EventArgs.Empty);
@@ -143,26 +153,29 @@ namespace MyClient
                             stream.Read(following_bytes, 0, following_bytes.Length);
                         }
                         
-                        string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
-                        NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-
-                        if (cmd_type == NomCommande.MSG)
+                        try
                         {
-                            //Messaging.RecieveMessage(following_bytes);
-                        }
-                        else
-                        {
-                            Client.methods[cmd_type](following_bytes, this);
+                            NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
                             Debug.Log(cmd_type);
+                            Messaging.WriteLog(log_file, $"command recieved: {cmd}, following_length: {following_length}");
+                            Client.methods[cmd_type](following_bytes, this);
+
+                        }
+                        catch (Exception ex)
+                        {
+                            //write_in_log
+                            Messaging.WriteLog(log_file, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
+                            stream.Flush();
                         }
                     }
 
 
 
                 }
-                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     this._continueListen = false;
+                    Messaging.WriteLog(log_file, $"ERROR: Listen crashed:  {ex}");
                 }
             }
         }
