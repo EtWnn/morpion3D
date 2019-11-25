@@ -143,6 +143,7 @@ namespace MyClient
                 catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     this._continueListen = false;
+                    Messaging.WriteLog(log_file, $"ERROR: Listen crashed:  {ex}");
                     Console.WriteLine(" >> " + ex.ToString());
                 }
             }
