@@ -14,7 +14,7 @@ namespace Serveur
     class Serveur
     {
         private static int _next_id = 0;
-        public const string log_file = "log.txt";
+        public const string log_file = "serveur_log.txt";
 
 
         public int port = 13000; 
