@@ -16,6 +16,8 @@ namespace MyClient
 {
     public class MyClient
     {
+        
+        public readonly string log_file;
         public Int32 port = 13000;
         public IPAddress localAddr = IPAddress.Parse("127.0.0.1");//127.0.0.1
 
@@ -42,6 +44,15 @@ namespace MyClient
             methods[NomCommande.RGR] = Messaging.RecieveGameRequestStatus;
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
+            methods[NomCommande.MSG] = Messaging.RecieveMessage;
+        }
+
+        public MyClient()
+        {
+            string to_date_string = DateTime.Now.ToString("s");
+            log_file = "client_log_" + to_date_string + ".txt";
+            log_file = log_file.Replace(':', '_');
+            Console.WriteLine($" log_file : {log_file}");
         }
 
         public void tryConnect()
@@ -110,16 +121,20 @@ namespace MyClient
                         Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {NombreOctets}");
 
                         string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
-                        NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-
-                        if (cmd_type == NomCommande.MSG)
+                        try
                         {
-                            Messaging.RecieveMessage(following_bytes);
-                        }
-                        else
-                        {
+                            NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
+                            Messaging.WriteLog(log_file, $"command recieved: {cmd}, following_length: {following_length}");
                             MyClient.methods[cmd_type](following_bytes, this);
+                            
                         }
+                        catch(Exception ex)
+                        {
+                            //write_in_log
+                            Messaging.WriteLog(log_file, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
+                            stream.Flush();
+                        }
+                        
                     }
 
 
@@ -128,6 +143,7 @@ namespace MyClient
                 catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     this._continueListen = false;
+                    Messaging.WriteLog(log_file, $"ERROR: Listen crashed:  {ex}");
                     Console.WriteLine(" >> " + ex.ToString());
                 }
             }

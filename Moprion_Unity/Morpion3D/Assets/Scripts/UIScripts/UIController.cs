@@ -26,6 +26,7 @@ public class UIController : MonoBehaviour
 
     public event EventHandler ReadyToGame;
     public event EventHandler StateChange;
+    public event EventHandler ReadyToMenu;
 
     private EStateUI _state;
     public EStateUI State
@@ -65,6 +66,8 @@ public class UIController : MonoBehaviour
 
         OptionsMenu.Exiting += OnSubMenuExiting;
         OpponentsMenu.Exiting += OnSubMenuExiting;
+
+        TurnIndicator.Exiting += (sender, e) => ReadyToMenu?.Invoke(this, EventArgs.Empty);
 
         State = EStateUI.InMainMenu;
     }

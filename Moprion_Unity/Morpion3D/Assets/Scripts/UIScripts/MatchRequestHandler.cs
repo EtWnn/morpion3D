@@ -254,7 +254,7 @@ private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
                         popup.StatorAnimation.Interrupt();
                         popup.Text = "<color=#66FFD9><b>" + user.UserName + "</b></color> has accepted the request!";
                         popup.CancelButton.interactable = false;
-                        popup.StatorAnimation.StartPulse(Color.green, 1f, 3);
+                        popup.StatorAnimation.StartPulse(Color.green, 0.5f, 4);
                         popup.StatorAnimation.Finished.Subscribe((object sender_, TEventArgs<StatorAnimation.EAnimation> e_) => {
                             Destroy(popup.gameObject);
                             UIController.RaiseReadyToGame();
