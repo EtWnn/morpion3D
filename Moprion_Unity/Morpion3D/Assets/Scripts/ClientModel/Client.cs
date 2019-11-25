@@ -85,7 +85,7 @@ namespace MyClient
 
                         //launching the ping thread
                     	this._pingThread = new Thread(() => this.Ping(this.Stream));
-                    	this._pingThread..IsBackground = true;
+                    	this._pingThread.IsBackground = true;
                     	this._pingThread.Start();
 
                         is_connected = true;
@@ -132,9 +132,12 @@ namespace MyClient
                 {
                     Debug.Log("try disconnect with ping method");
                     this._continueListen = false;
-                    tryDisconnect();
+                    Debug.Log("this._socket.Connected : " + this._socket.Connected);
+                    this._socket.Disconnect(false);
+                    is_connected = false;
+                    Disconnected?.Invoke(this, EventArgs.Empty);
                 }
-                Thread.Sleep(1000);
+                Thread.Sleep(100);
             }
         }           
 
