@@ -3,17 +3,57 @@ using UnityEngine;
 
 public class CubeletScript : MonoBehaviour
 {
+    public event EventHandler Clicked;
+    ///// Public fields / properties /////
+    
     public Color BaseColor;
     public Color HoverColor;
-    public GameObject FillingItemLeftClick;
-    public GameObject FillingItemRightClick;
-    private MeshRenderer MeshRenderer;
-    public GameObject CurrentFillingObject { get; private set; }
+    
     public bool Filled { get; private set; }
+    public GameObject CurrentFillingObject { get; private set; }
+    public System.Numerics.Vector3 Position { get; set; }
 
+    ///// Private fields / properties /////
+
+    private MeshRenderer MeshRenderer;
     private Action updateFunction;
+    
     private Action onMouseOverFunction;
     private Action onMouseExitFunction;
+
+    private GridScript gridScript;
+
+    ///// Public methods /////
+
+    public void SetActive(bool value) => gameObject.SetActive(value);
+
+    public void OnStateChange(object sender, EventArgs args)
+    {
+        MainScript ms = sender as MainScript;
+        switch (ms.State)
+        {
+            case EState.InGame:
+                updateFunction = InGameUpdateBehaviouor;
+                onMouseOverFunction = InGameOnMouseOverBehaviour;
+                onMouseExitFunction = InGameOnMouseExitBehaviour;
+                break;
+            default:
+                updateFunction = NoOpBehaviour;
+                onMouseOverFunction = NoOpBehaviour;
+                onMouseExitFunction = NoOpBehaviour;
+                break;
+        }
+    }
+
+    public void FillWith(GameObject prefab)
+    {
+        if (Filled)
+            Destroy(CurrentFillingObject);
+        CurrentFillingObject = Instantiate(prefab, transform);
+        Filled = true;
+    }
+
+    ///// Private methods /////
 
     private void Awake()
     {
@@ -30,65 +70,41 @@ public class CubeletScript : MonoBehaviour
         updateFunction = NoOpBehaviour;
         onMouseOverFunction = NoOpBehaviour;
         onMouseExitFunction = NoOpBehaviour;
+
+        gridScript = GetComponentInParent<GridScript>();
     }
 
     // Update is called once per frame
-    void OnMouseOver()
+    private void OnMouseOver()
     {
         onMouseOverFunction();
     }
 
-    void OnMouseExit()
+    private void OnMouseExit()
     {
         onMouseExitFunction();
     }
 
-    void Update()
+    private void Update()
     {
         updateFunction();
     }
 
-    public void OnStateChange(object sender, EventArgs args)
-    {
-        MainScript ms = sender as MainScript;
-        switch (ms.State)
-        {
-            case EState.InGame:
-                updateFunction = InGameUpdateBehaviouor;
-                onMouseOverFunction = InGameOnMouseOverBehaviour;
-                onMouseExitFunction = InGameOnMouseExitBehaviour;
-                break;
-            default:
-                break;
-        }
-    }
+    private void NoOpBehaviour() { }
 
-    void NoOpBehaviour() { }
-
-    void InGameOnMouseOverBehaviour()
+    private void InGameOnMouseOverBehaviour()
     {
         MeshRenderer.material.color = HoverColor;
-        if (!Filled)
-        {
-            if (Input.GetMouseButtonDown(0))
-            {
-                CurrentFillingObject = Instantiate(FillingItemLeftClick, transform);
-                Filled = true;
-            }
-            else if (Input.GetMouseButtonDown(1))
-            {
-                CurrentFillingObject = Instantiate(FillingItemRightClick, transform);
-                Filled = true;
-            }
-        }
+        if (Input.GetMouseButtonDown(0))
+            Clicked?.Invoke(this, EventArgs.Empty);
     }
 
-    void InGameOnMouseExitBehaviour()
+    private void InGameOnMouseExitBehaviour()
     {
         MeshRenderer.material.color = BaseColor;
     }
 
-    void InGameUpdateBehaviouor()
+    private void InGameUpdateBehaviouor()
     {
         if (Filled && Input.GetKeyDown(KeyCode.R))
         {
