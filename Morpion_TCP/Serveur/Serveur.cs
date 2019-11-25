@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Serveur.Functions;
+using System.Linq;
 
 namespace Serveur
 {
@@ -151,27 +152,27 @@ namespace Serveur
                 string choice = Console.ReadLine();
                 if (choice == "0")
                 {
-                    Console.WriteLine($"Voici les {my_serveur.UsersHandlers.Count} utilisateurs connectés:");
-                    foreach (var user in my_serveur.UsersHandlers.Values)
+                    var connected_users = from user in my_serveur.UsersHandlers.Values
+                                          where user.IsAlive()
+                                          orderby user.Id, user.UserName
+                                          select user;
+                    Console.WriteLine($"Voici les {connected_users.Count()} utilisateurs connectés:");
+                    foreach (var user in connected_users)
                     {
-                        if(user.IsAlive())
-                        {
-                            Console.WriteLine($"id {user.Id}, username: {user.UserName}");
-                        }
-                            
+                        Console.WriteLine($"id {user.Id}, username: {user.UserName}");
                     }
 
                 }
                 else if (choice == "1")
                 {
-                    Console.WriteLine($"Voici les {my_serveur.UsersHandlers.Count} utilisateurs en jeu:");
-                    foreach (var user in my_serveur.UsersHandlers.Values)
+                    var ingame__users = from user in my_serveur.UsersHandlers.Values
+                                        where user.IsAlive() && user.Game != null
+                                        orderby user.Id, user.UserName
+                                        select user;
+                    Console.WriteLine($"Voici les {ingame__users.Count()} utilisateurs en jeu:");
+                    foreach (var user in ingame__users)
                     {
-                        if (user.IsAlive() && user.Game != null)
-                        {
-                            Console.WriteLine($"id {user.Id}, username: {user.UserName}");
-                        }
-
+                        Console.WriteLine($"id {user.Id}, username: {user.UserName}");
                     }
                 }
                 else if (choice == "2")
