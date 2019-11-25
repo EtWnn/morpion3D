@@ -254,8 +254,7 @@ namespace Serveur.Functions
             return new byte[0];
         }
         
-
-        // A supprimer !
+        
         public static void SendMessage(NetworkStream stream, string message)
         {
             //command in bytes
