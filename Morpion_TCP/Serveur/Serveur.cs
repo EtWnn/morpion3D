@@ -158,7 +158,7 @@ namespace Serveur
                 if (choice == "0")
                 {
                     var connected_users = from user in my_serveur.UsersHandlers.Values
-                                          where user.IsAlive()
+                                          where user.clientSocket.Connected
                                           orderby user.Id, user.UserName
                                           select user;
                     Console.WriteLine($"Voici les {connected_users.Count()} utilisateurs connectés:");
@@ -171,7 +171,7 @@ namespace Serveur
                 else if (choice == "1")
                 {
                     var ingame__users = from user in my_serveur.UsersHandlers.Values
-                                        where user.IsAlive() && user.Game != null
+                                        where user.clientSocket.Connected && user.Game != null
                                         orderby user.Id, user.UserName
                                         select user;
                     Console.WriteLine($"Voici les {ingame__users.Count()} utilisateurs en jeu:");

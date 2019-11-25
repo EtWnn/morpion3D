@@ -83,7 +83,7 @@ namespace MyClient
             if (this._socket != null && this._socket.Connected)
             {
                 this._continueListen = false;
-                this._socket.Disconnect(false);
+                this._socket.Close();
                 Console.WriteLine("Déconnection effectuée");
             }
         }

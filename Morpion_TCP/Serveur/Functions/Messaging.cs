@@ -100,8 +100,8 @@ namespace Serveur.Functions
         {
             
             var bytes_users = from e in userHandler.UsersHandlers.Values
-                        where e.Id != userHandler.Id && e.IsAlive()
-                        orderby e.Id, e.UserName
+                        where e.Id != userHandler.Id && e.clientSocket.Connected
+                              orderby e.Id, e.UserName
                         select e.ToBytes();
             int total_users_bytes = 0;
             foreach (var e in bytes_users)

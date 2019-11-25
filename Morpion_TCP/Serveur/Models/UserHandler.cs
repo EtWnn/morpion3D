@@ -143,19 +143,5 @@ namespace Serveur.Models
 
             return bytes;
         }
-
-        public bool IsAlive()
-        {
-            try
-            {
-                byte[] test = new byte[1];
-                this.stream.Write(test, 0, test.Length);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-            return true;
-        }
     }
 }
