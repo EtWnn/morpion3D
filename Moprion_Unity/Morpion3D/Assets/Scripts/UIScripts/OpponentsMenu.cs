@@ -101,6 +101,7 @@ public class OpponentsMenu : MonoBehaviour
         ToggleGroup = ViewportContent.GetComponent<ToggleGroup>();
 
         Opponents = new SharedUpdatable<List<User>>();
+        Opponents.UpdateAction = UpdateViewport;
 
         isClientConnected = new SharedUpdatable<bool>();
         isClientConnected.UpdateAction = (bool value) => RefreshButton.interactable = value;
