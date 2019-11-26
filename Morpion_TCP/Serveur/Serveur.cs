@@ -209,11 +209,13 @@ namespace Serveur
                                           where user.Connected
                                           orderby user.Id, user.UserName
                                           select user;
+                    Console.WriteLine("\n\n");
                     Console.WriteLine($"Voici les {connectedUSers.Count()} utilisateurs connectés:");
                     foreach (var user in connectedUSers)
                     {
                         Console.WriteLine($"id {user.Id}, username: {user.UserName}");
                     }
+                    Console.WriteLine("\n\n");
 
                 }
                 else if (choice == "1")
@@ -222,11 +224,13 @@ namespace Serveur
                                         where user.Connected && user.Game != null
                                         orderby user.Id, user.UserName
                                         select user;
+                    Console.WriteLine("\n\n");
                     Console.WriteLine($"Voici les {ingameUsers.Count()} utilisateurs en jeu:");
                     foreach (var user in ingameUsers)
                     {
                         Console.WriteLine($"id {user.Id}, username: {user.UserName}");
                     }
+                    Console.WriteLine("\n\n");
                 }
                 else if (choice == "2")
                 {
