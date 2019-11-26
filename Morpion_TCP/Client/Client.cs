@@ -16,8 +16,9 @@ namespace MyClient
 {
     public class MyClient
     {
-        
-        public readonly string log_file;
+
+        public Mutex LogMutex = new Mutex();
+        public readonly string LogFile;
         public Int32 port = 13000;
         public IPAddress localAddr = IPAddress.Parse("127.0.0.1");//127.0.0.1
 
@@ -25,10 +26,11 @@ namespace MyClient
         private IPEndPoint _remoteEP = null;
         private bool _continueListen = false;
         private Thread _listeningThread = null;
+        private Thread _pingThread = null;
         public NetworkStream Stream = null;
+        public Mutex StreamMutex = new Mutex();
 
-
-        public Mutex mutex = new Mutex();
+        public Mutex UsersMutex = new Mutex();
         public Dictionary<int, User> connected_users = new Dictionary<int, User>();
 
 
@@ -50,9 +52,9 @@ namespace MyClient
         public MyClient()
         {
             string to_date_string = DateTime.Now.ToString("s");
-            log_file = "client_log_" + to_date_string + ".txt";
-            log_file = log_file.Replace(':', '_');
-            Console.WriteLine($" log_file : {log_file}");
+            LogFile = "client_log_" + to_date_string + ".txt";
+            LogFile = LogFile.Replace(':', '_');
+            Console.WriteLine($" log_file : {LogFile}");
         }
 
         public void tryConnect()
@@ -66,12 +68,18 @@ namespace MyClient
                 this._socket.Connect(this._remoteEP);
                 if (this._socket.Connected)
                 {
+                    this._continueListen = true;
+
                     this.Stream = new NetworkStream(this._socket);
                     this.Stream.ReadTimeout = 10;
 
                     //launching the listening thread
-                    this._listeningThread = new Thread(() => this.Listen(this.Stream));
+                    this._listeningThread = new Thread(Listen);
                     this._listeningThread.Start();
+
+                    //launching the ping thread
+                    this._pingThread = new Thread(Ping);
+                    this._pingThread.Start();
                 }
             }
             
@@ -88,26 +96,44 @@ namespace MyClient
             }
         }
 
-        void Listen(NetworkStream stream)
+        void Ping()
         {
-            this._continueListen = true;
+            while (this._continueListen)
+            {
+                try
+                {
+                    Messaging.SendPing(this);
+                }
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                {
+                    this.StreamMutex.ReleaseMutex();
+                    this._continueListen = false;
+                    tryDisconnect();
+                }
+                Thread.Sleep(1000);
+            }
+        }
+
+        void Listen()
+        {
             while (this._continueListen)
             {
 
                 try
                 {
                     Byte[] bytes = new Byte[5];
-                    int NombreOctets = 0;
+                    int n_bytes = 0;
                     try
                     {
-                        NombreOctets = stream.Read(bytes, 0, bytes.Length);
+                        n_bytes = Messaging.StreamRead(this, bytes);
                     }
                     catch (IOException ex)
                     {
-                        NombreOctets = 0;
+                        n_bytes = 0;
+                        this.StreamMutex.ReleaseMutex();
                     }
                     
-                    if (NombreOctets >= 5) //minimum number of bytes for CMD + length to follow
+                    if (n_bytes >= 5) //minimum number of bytes for CMD + length to follow
                     {
 
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
@@ -116,34 +142,34 @@ namespace MyClient
                         byte[] following_bytes = new byte[following_length];
                         if (following_length > 0)
                         {
-                            stream.Read(following_bytes, 0, following_bytes.Length);
+                            Messaging.StreamRead(this, following_bytes);
                         }
-                        Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {NombreOctets}");
+                        Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {n_bytes}");
 
                         string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
                         try
                         {
                             NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-                            Messaging.WriteLog(log_file, $"command recieved: {cmd}, following_length: {following_length}");
+                            Messaging.WriteLog(this, $"command recieved: {cmd}, following_length: {following_length}");
                             MyClient.methods[cmd_type](following_bytes, this);
                             
                         }
                         catch(Exception ex)
                         {
                             //write_in_log
-                            Messaging.WriteLog(log_file, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
-                            stream.Flush();
+                            Messaging.WriteLog(this, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
+                            this.Stream.Flush();
                         }
                         
                     }
 
-
+                    Thread.Sleep(100);
 
                 }
                 catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     this._continueListen = false;
-                    Messaging.WriteLog(log_file, $"ERROR: Listen crashed:  {ex}");
+                    Messaging.WriteLog(this, $"ERROR: Listen crashed:  {ex}");
                     Console.WriteLine(" >> " + ex.ToString());
                 }
             }
@@ -221,19 +247,19 @@ namespace MyClient
 
                         Console.WriteLine("entrez un message");
                         string message = Console.ReadLine();
-                        Messaging.SendMessage(my_client.Stream, message);
+                        Messaging.SendMessage(my_client, message);
 
                     }
                     else if (choice == "1")
                     {
-                        Messaging.AskOtherUsers(my_client.Stream);
+                        Messaging.AskOtherUsers(my_client);
                         Console.WriteLine("La demande a été émise");
                     }
                     else if (choice == "2")
                     {
                         Console.WriteLine("entrez un nom d'utilisateur");
                         string userName = Console.ReadLine();
-                        Messaging.SendUserName(my_client.Stream, userName);
+                        Messaging.SendUserName(my_client, userName);
                     }
                     else if (choice == "3")
                     {
@@ -249,13 +275,13 @@ namespace MyClient
                         int id = Convert.ToInt32(Console.ReadLine());
                         Console.WriteLine("entrez votre réponse:");
                         bool accepted = Convert.ToBoolean(Console.ReadLine());
-                        Messaging.SendGameRequestResponse(my_client.Stream, my_client, id, accepted);
+                        Messaging.SendGameRequestResponse(my_client, id, accepted);
                     }
                     else if (choice == "6")
                     {
                         Console.WriteLine("Entrez l'id de l'adversaire souhaité:");
                         int id = Convert.ToInt32(Console.ReadLine());
-                        Messaging.RequestMatch(my_client.Stream, id);
+                        Messaging.RequestMatch(my_client, id);
                         Console.WriteLine("Requête envoyée");
                     }
                     else if (choice == "7")
@@ -281,7 +307,7 @@ namespace MyClient
                     }
                     else if (choice == "10")
                     {
-                        Messaging.AskGameBoard(my_client.Stream);
+                        Messaging.AskGameBoard(my_client);
                         Console.WriteLine($"Requête envoyée");
                     }
                     else if (choice == "11")
@@ -306,7 +332,7 @@ namespace MyClient
                             Console.WriteLine("Quelle est la coordonnee z (0,1 ou 2) de la position que vous voulez jouer ? (la colonne)");
                             z = (int.Parse(Console.ReadLine()));
                             position.Z = z;
-                            Messaging.SendPositionPlayer(my_client.Stream, position);
+                            Messaging.SendPositionPlayer(my_client, position);
                         }
                     }
                     else

@@ -13,7 +13,8 @@ namespace MyClient
 {
     public class Client
     {
-        public readonly string log_file;
+        public Mutex LogMutex = new Mutex();
+        public readonly string LogFile;
         public Int32 port = 13000;
         public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
@@ -21,13 +22,16 @@ namespace MyClient
         private IPEndPoint _remoteEP = null;
         private bool _continueListen = false;
         private Thread _listeningThread = null;
+        private Thread _pingThread = null;
         public NetworkStream Stream = null;
+        public Mutex StreamMutex = new Mutex();
 
         public event EventHandler Connected;
         public event EventHandler Disconnected;
         public event EventHandler GameUpdated;
         public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
         public event EventHandler<TEventArgs<List<User>>> OpponentListUpdated;
+        public event EventHandler OpponentDisconnected;
 
 
         public bool is_connected = false;
@@ -58,15 +62,14 @@ namespace MyClient
             methods[NomCommande.RGR] = Messaging.RecieveGameRequestStatus;
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
-            methods[NomCommande.MSG] = Messaging.RecieveMessage;
+            methods[NomCommande.NDC] = Messaging.RecieveOpponentDisconnection;
         }
 
         public Client()
         {
             string to_date_string = DateTime.Now.ToString("s");
-            log_file = "client_log_" + to_date_string + ".txt";
-            log_file = log_file.Replace(':', '_');
-            Console.WriteLine($" log_file : {log_file}");
+            LogFile = "client_log_" + to_date_string + ".txt";
+            LogFile = LogFile.Replace(':', '_');
         }
 
         public void tryConnect()
@@ -82,13 +85,20 @@ namespace MyClient
                     this._socket.Connect(this._remoteEP);
                     if (this._socket.Connected)
                     {
+                        this._continueListen = true;
+
                         this.Stream = new NetworkStream(this._socket);
                         this.Stream.ReadTimeout = 10;
 
                         //launching the listening thread
-                        this._listeningThread = new Thread(() => this.Listen(this.Stream));
+                        this._listeningThread = new Thread(Listen);
                         this._listeningThread.IsBackground = true;
                         this._listeningThread.Start();
+
+                        //launching the ping thread
+                    	this._pingThread = new Thread(Ping);
+                    	this._pingThread.IsBackground = true;
+                    	this._pingThread.Start();
 
                         is_connected = true;
                         Debug.Log("Before Connected event");
@@ -122,26 +132,46 @@ namespace MyClient
             }
         }
 
-        void Listen(NetworkStream stream)
+        void Ping()
         {
-            this._continueListen = true;
+            while (this._continueListen)
+            {
+                try
+                {
+                    Messaging.SendPing(this);
+                }
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                {
+                    this.StreamMutex.ReleaseMutex();
+                    Debug.Log("try disconnect with ping method");
+                    this._continueListen = false;
+                    Debug.Log("this._socket.Connected : " + this._socket.Connected);
+                    tryDisconnect();
+                }
+                Thread.Sleep(1000);
+            }
+        }           
+
+        void Listen()
+        {
             while (this._continueListen)
             {
 
                 try
                 {
                     Byte[] bytes = new Byte[5];
-                    int NombreOctets = 0;
+                    int n_bytes = 0;
                     try
                     {
-                        NombreOctets = stream.Read(bytes, 0, bytes.Length);
+                        n_bytes = Messaging.StreamRead(this, bytes);
                     }
                     catch (IOException)
                     {
-                        NombreOctets = 0;
+                        n_bytes = 0;
+                        this.StreamMutex.ReleaseMutex();
                     }
                     
-                    if (NombreOctets >= 5) //minimum number of bytes for CMD + length to follow
+                    if (n_bytes >= 5) //minimum number of bytes for CMD + length to follow
                     {
 
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
@@ -150,36 +180,40 @@ namespace MyClient
                         byte[] following_bytes = new byte[following_length];
                         if (following_length > 0)
                         {
-                            stream.Read(following_bytes, 0, following_bytes.Length);
+                            Messaging.StreamRead(this, following_bytes);
                         }
-                        
+
                         try
                         {
                             NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-                            Debug.Log(cmd_type);
-                            Messaging.WriteLog(log_file, $"command recieved: {cmd}, following_length: {following_length}");
+                            Messaging.WriteLog(this, $"command recieved: {cmd}, following_length: {following_length}");
                             Client.methods[cmd_type](following_bytes, this);
 
                         }
                         catch (Exception ex)
                         {
                             //write_in_log
-                            Messaging.WriteLog(log_file, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
-                            stream.Flush();
+                            Messaging.WriteLog(this, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
+                            this.Stream.Flush();
                         }
                     }
 
-
+                    Thread.Sleep(100);
 
                 }
                 catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     this._continueListen = false;
-                    Messaging.WriteLog(log_file, $"ERROR: Listen crashed:  {ex}");
+                    Messaging.WriteLog(this, $"ERROR: Listen crashed:  {ex}");
                 }
             }
         }
         
+        internal void RaiseOpponentDisconnected()
+        {
+            //this.GameClient = null;
+            OpponentDisconnected?.Invoke(this, EventArgs.Empty);
+        }
 
         internal void RaiseMatchRequestUpdated(MatchRequestEventArgs matchRequestEventArgs)
         {
@@ -197,7 +231,7 @@ namespace MyClient
 
         public void OnMatchUpdatingOpponentList(object sender, EventArgs e)
         {
-            Messaging.AskOtherUsers(Stream);
+            Messaging.AskOtherUsers(this);
         }
 
         public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e)
@@ -205,16 +239,16 @@ namespace MyClient
             switch (e.Status)
             {
                 case MatchRequestEventArgs.EStatus.New:
-                    Messaging.RequestMatch(Stream, e.User.Id);
+                    Messaging.RequestMatch(this, e.User.Id);
                     break;
                 case MatchRequestEventArgs.EStatus.Canceled:
                     // a coder nice to have
                     break;
                 case MatchRequestEventArgs.EStatus.Accepted:
-                    Messaging.SendGameRequestResponse(Stream, this, e.User.Id, true);
+                    Messaging.SendGameRequestResponse(this, e.User.Id, true);
                     break;
                 case MatchRequestEventArgs.EStatus.Declined:
-                    Messaging.SendGameRequestResponse(Stream, this, e.User.Id, false);
+                    Messaging.SendGameRequestResponse(this, e.User.Id, false);
                     break;
                 case MatchRequestEventArgs.EStatus.CannotBeReached:
                     // nice to have
@@ -228,7 +262,7 @@ namespace MyClient
         public void OnPositionPlayed(object sender, TEventArgs<System.Numerics.Vector3> e)
         {
             var vec = e.Data;
-            Messaging.SendPositionPlayer(Stream, vec);
+            Messaging.SendPositionPlayer(this, vec);
         }
     }
 }

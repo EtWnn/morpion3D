@@ -21,6 +21,7 @@ namespace Serveur.Models
             methods[NomCommande.DGB] = Messaging.SendGameBoard;
             methods[NomCommande.MRQ] = Messaging.TransferMatchRequest;
             methods[NomCommande.GRR] = Messaging.TransferGameRequestResponse;
+            methods[NomCommande.PNG] = Messaging.RecievePing;
         }
 
 
@@ -51,21 +52,24 @@ namespace Serveur.Models
         public bool KeepChatting;
         public int Id { get; private set; }
         public string UserName { get; set; }
-        public NetworkStream stream;
-        public TcpClient clientSocket { get; set; }
+        public NetworkStream Stream;
+        public Mutex StreamMutex;
+        public TcpClient ClientSocket { get; set; }
         public ModelGame.Game Game { get; set; }
-        public readonly string log_file;
-
-        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex, string log_file)
+        public readonly string LogFile;
+        public Mutex LogMutex;
+        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex, string log_file, Mutex logMutex)
         {
-            this.clientSocket = inClientSocket;
+            this.ClientSocket = inClientSocket;
             this.UserName = "default_" + id.ToString();
             this.Id = id;
             this.Game = null;
             this.UsersHandlers = userHandlers;
             this.usersMutex = usersMutex;
-            this.log_file = log_file;
+            this.LogFile = log_file;
             this.KeepChatting = true;
+            this.StreamMutex = new Mutex();
+            this.LogMutex = logMutex;
 
 
         }
@@ -78,8 +82,10 @@ namespace Serveur.Models
 
         private void DoChat()
         {
-            stream = this.clientSocket.GetStream();
-            Messaging.SendMessage(stream, "Hi new user! You have been assigned the id " + this.Id.ToString() );
+            StreamMutex.WaitOne();
+            Stream = this.ClientSocket.GetStream();
+            Messaging.SendMessage(this, "Hi new user! You have been assigned the id " + this.Id.ToString() );
+            StreamMutex.ReleaseMutex();
 
             while (KeepChatting)
             {
@@ -87,25 +93,25 @@ namespace Serveur.Models
                 try
                 {
                     Byte[] bytes = new Byte[5];
-                    int NombreOctets = stream.Read(bytes, 0, bytes.Length);
-                    if(NombreOctets >= 5) //minimum number of bytes for CMD + length to follow
+                    int n_bytes = Messaging.StreamRead(this, bytes);
+                    if (n_bytes >= 5) //minimum number of bytes for CMD + length to follow
                     {
                         
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
                         int following_length = BitConverter.ToInt16(bytes, 3);
 
-                        Messaging.WriteLog(log_file, $"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
+                        Messaging.WriteLog(this, $"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {n_bytes}");
                         byte[] following_bytes = new byte[following_length];
                         if(following_length > 0)
                         {
-                            stream.Read(following_bytes, 0, following_bytes.Length);
+                            Messaging.StreamRead(this, following_bytes);
                         }
 
                         byte[] response = UserHandler.methods[(NomCommande)Enum.Parse(typeof(NomCommande), cmd)](following_bytes, this);
 
-                        if(response.Length > 0)
+                        if (response.Length > 0)
                         {
-                            stream.Write(response, 0, response.Length);
+                            Messaging.StreamWrite(this, response);
                         }
                     }
                     
@@ -115,16 +121,16 @@ namespace Serveur.Models
                 catch (System.IO.IOException ex) //à faire: prendre en compte la fermeture inatendue du canal par le client
                 {
                     KeepChatting = false;
-                    Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
+                    Messaging.WriteLog(this, $"the user {this.UserName} Id {this.Id} got disconnected");
 
                     if(Game != null) //si le joueur était en jeu
                     {
                         // à faire: prévenir l'autre joueur
-
+                        Messaging.SendNotifcationDisconnection(this);
                         Game = null;
                     }
 
-                    this.clientSocket.Close();
+                    this.ClientSocket.Close();
                 }
             }
 

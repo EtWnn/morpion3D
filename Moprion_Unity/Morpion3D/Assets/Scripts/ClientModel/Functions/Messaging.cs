@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Numerics;
 using MyClient.ModelGame;
 using MyClient.Models;
+using UnityEngine;
 
 namespace MyClient.Functions
 {
@@ -19,73 +20,75 @@ namespace MyClient.Functions
         NPP, //New position played 
         DGB, // game board
         GRR, // request response
-        RGR // recieve game request
+        RGR, // recieve game request
+        NDC, // notification opponent disconnected
+        PNG // Ping
         //RQS, //
 
     }
 
     public class Messaging
     {
+        // Streaming methods
+        public static int StreamRead(Client client, byte[] message)
+        {
+            client.StreamMutex.WaitOne();
+            int n_bytes = client.Stream.Read(message, 0, message.Length);
+            client.StreamMutex.ReleaseMutex();
+
+            return n_bytes;
+        }
+
+        public static void StreamWrite(Client client, byte[] message)
+        {
+            client.StreamMutex.WaitOne();
+            client.Stream.Write(message, 0, message.Length);
+            client.StreamMutex.ReleaseMutex();
+        }
+
         //Serialization
-        
+
         private static byte[] serializationMessage(NomCommande nomCommande)
         {
-            //command in bytes
+            
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
-            //length of the content in bytes
             var message_length = BitConverter.GetBytes((Int16)0);
 
             byte[] msg = new byte[cmd.Length + message_length.Length];
-
-            //command
+            
             cmd.CopyTo(msg, 0);
-            //length to follow
             message_length.CopyTo(msg, cmd.Length);
-
-            //renvoie le tableau de bytes
+            
             return msg;
         }
 
         private static byte[] serializationMessage(string message, NomCommande nomCommande)
         {
-            //command in bytes
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
-            //content in bytes
             var message_bytes = Encoding.UTF8.GetBytes(message);
-            //length of the content in bytes
             var message_length = BitConverter.GetBytes((Int16)message_bytes.Length);
             
 
             byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
-
-            //command
+            
             cmd.CopyTo(msg, 0);
-            //length to follow
             message_length.CopyTo(msg, cmd.Length);
-            //content
             message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
-
-            //renvoie le tableau de bytes
+            
             return msg;
         }
 
         private static byte[] serializationMessage(byte[] message_bytes, NomCommande nomCommande)
         {
-            //command in bytes
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
-            //length of the content in bytes
             var message_length = BitConverter.GetBytes((Int16)message_bytes.Length);
 
             byte[] msg = new byte[cmd.Length + message_length.Length + message_bytes.Length];
-
-            //command
+            
             cmd.CopyTo(msg, 0);
-            //length to follow
             message_length.CopyTo(msg, cmd.Length);
-            //content
             message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
-
-            //renvoie le tableau de bytes
+            
             return msg;
         }
 
@@ -117,16 +120,22 @@ namespace MyClient.Functions
         }
 
         // General commands
+        public static void SendPing(Client client)
+        {
+            byte[] msg = serializationMessage(NomCommande.PNG);
+            StreamWrite(client, msg);
+        }
+
         public static void RecieveMessage(byte[] bytes, Client client)
         {
             string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-            WriteLog(client.log_file, "message recieved from the server: " + message);
+            WriteLog(client, "message recieved from the server: " + message);
         }
 
-        public static void AskOtherUsers(NetworkStream stream)
+        public static void AskOtherUsers(Client client)
         {
             byte[] msg = serializationMessage(NomCommande.OUS);
-            stream.Write(msg, 0, msg.Length);
+            StreamWrite(client, msg);
         }
 
         public static void RecieveOtherUsers(byte[] bytes, Client client)
@@ -147,18 +156,24 @@ namespace MyClient.Functions
             client.RaiseOpponentListUpdated(listUsers);
         }
 
-        public static void SendUserName(NetworkStream stream, string userName)
+        public static void SendMessage(Client client, string message)
+        {
+            byte[] msg = serializationMessage(message, NomCommande.MSG);
+            StreamWrite(client, msg);
+        }
+
+        public static void SendUserName(Client client, string userName)
         {
             byte[] msg = serializationMessage(userName, NomCommande.USN);
-            stream.Write(msg, 0, msg.Length);
+            StreamWrite(client, msg);
         }
 
         // Game Requests commands
 
-        public static void RequestMatch(NetworkStream stream, int id)
+        public static void RequestMatch(Client client, int id)
         {
             byte[] msg = serializationMessage(BitConverter.GetBytes((Int16)id), NomCommande.MRQ);
-            stream.Write(msg, 0, msg.Length);
+            StreamWrite(client, msg);
         }
 
         public static void RecieveGameRequestStatus(byte[] bytes, Client client)
@@ -190,14 +205,14 @@ namespace MyClient.Functions
             client.RaiseMatchRequestUpdated(new MatchRequestEventArgs(user, MatchRequestEventArgs.EStatus.New));
         }
 
-        public static void SendGameRequestResponse(NetworkStream stream, Client client, int idOpponent, bool response)
+        public static void SendGameRequestResponse(Client client, int idOpponent, bool response)
         {
-            AskOtherUsers(stream); //probablement a supprimer maintenant que le dictionnaire connected_users est mis a jour lors de l'appel de la methode RecieveGameRequest
+            AskOtherUsers(client); //probablement a supprimer maintenant que le dictionnaire connected_users est mis a jour lors de l'appel de la methode RecieveGameRequest
 
             if (response)
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
-                stream.Write(bytes, 0, bytes.Length);
+                StreamWrite(client, bytes);
 
                 client.Opponent = client.connected_users[idOpponent];
                 client.gameRequestsRecieved.Remove(idOpponent);
@@ -205,31 +220,31 @@ namespace MyClient.Functions
                 foreach (var opponent in itemsToRemove)
                 {
                     bytes = serializationMessage(serializationResponseOpponent(opponent.Key, !response), NomCommande.GRR);
-                    stream.Write(bytes, 0, bytes.Length);
+                    StreamWrite(client, bytes);
                     client.gameRequestsRecieved.Remove(opponent.Key);
                 }
             }
             else
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
-                stream.Write(bytes, 0, bytes.Length);
+                StreamWrite(client, bytes);
                 client.gameRequestsRecieved.Remove(idOpponent);
             }
         }
 
 
         // In-game commands
-        public static void SendPositionPlayer(NetworkStream stream, Vector3 position)
+        public static void SendPositionPlayer(Client client, System.Numerics.Vector3 position)
         {
             byte[] positionBytes = Serialization.SerializationPositionPlayed(position);
             byte[] msg = serializationMessage(positionBytes, NomCommande.NPP);
-            stream.Write(msg, 0, msg.Length);
+            StreamWrite(client, msg);
         }
 
-        public static void AskGameBoard(NetworkStream stream)
+        public static void AskGameBoard(Client client)
         {
             byte[] msg = serializationMessage(NomCommande.DGB);
-            stream.Write(msg, 0, msg.Length);
+            StreamWrite(client, msg);
         }
 
         public static void RecieveGameBoard(byte[] bytes, Client client)
@@ -237,15 +252,24 @@ namespace MyClient.Functions
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
         }
 
-        public static void WriteLog(string log_file, string log)
+        public static void RecieveOpponentDisconnection(byte[] bytes, Client client)
+        {
+            Debug.Log("RaiseOpponentDisconnected");
+            client.RaiseOpponentDisconnected();
+        }
+
+        public static void WriteLog(Client client, string log)
         {
             DateTime localDate = DateTime.Now;
             string log_date = localDate.ToString("s");
+
+            client.LogMutex.WaitOne();
             using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(log_file, true))
+            new System.IO.StreamWriter(client.LogFile, true))
             {
                 file.WriteLine(log_date + " " + log);
             }
+            client.LogMutex.ReleaseMutex();
         }
     }
 }
