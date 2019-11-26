@@ -6,63 +6,63 @@ using UnityEngine;
 using MyClient.Models;
 using TMPro;
 
-internal class CientMatchReq
-{
-    public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
+//internal class CientMatchReq
+//{
+//    public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
 
-    private Thread listeningThread;
+//    private Thread listeningThread;
 
-    public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e)
-    {  
-        switch (e.Status)
-        {
-            case MatchRequestEventArgs.EStatus.New:
-                // Simulate opponent respoonse
-                var eCopy = e;
-                listeningThread = new Thread(() =>
-                {
-                    try
-                    {
-                        Thread.Sleep(2000);
-                        MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(eCopy.User, MatchRequestEventArgs.EStatus.Accepted));
-                    }
-                    catch (ThreadInterruptedException)
-                    {}
-                });
-                listeningThread.Start();
-                break;
-            case MatchRequestEventArgs.EStatus.Canceled:
-                // Notifyy opponent
-                listeningThread.Interrupt();
-                break;
-            case MatchRequestEventArgs.EStatus.Accepted:
-                // Notify opponent
-                break;
-            case MatchRequestEventArgs.EStatus.Declined:
-                // Notify opponent
-                break;
-            default:
-                break;
-        }
-    }
+//    public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e)
+//    {  
+//        switch (e.Status)
+//        {
+//            case MatchRequestEventArgs.EStatus.New:
+//                // Simulate opponent respoonse
+//                var eCopy = e;
+//                listeningThread = new Thread(() =>
+//                {
+//                    try
+//                    {
+//                        Thread.Sleep(2000);
+//                        MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(eCopy.User, MatchRequestEventArgs.EStatus.Accepted));
+//                    }
+//                    catch (ThreadInterruptedException)
+//                    {}
+//                });
+//                listeningThread.Start();
+//                break;
+//            case MatchRequestEventArgs.EStatus.Canceled:
+//                // Notifyy opponent
+//                listeningThread.Interrupt();
+//                break;
+//            case MatchRequestEventArgs.EStatus.Accepted:
+//                // Notify opponent
+//                break;
+//            case MatchRequestEventArgs.EStatus.Declined:
+//                // Notify opponent
+//                break;
+//            default:
+//                break;
+//        }
+//    }
 
-    public void SimulateRequestFromOpponent(int msFromStart, bool cancelRequest = false)
-    {
-        Debug.Log("Incoming match request in " + msFromStart + " ms!");
-        var th = new Thread(() =>
-        {
-            User opponent = new User(654321, "CeriseDeGroupama");
-            Thread.Sleep(msFromStart);
-            MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.New));
-            if (cancelRequest)
-            {
-                Thread.Sleep(100);
-                MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.Canceled));
-            }
-        });
-        th.Start();
-    }
-}
+//    public void SimulateRequestFromOpponent(int msFromStart, bool cancelRequest = false)
+//    {
+//        Debug.Log("Incoming match request in " + msFromStart + " ms!");
+//        var th = new Thread(() =>
+//        {
+//            User opponent = new User(654321, "CeriseDeGroupama");
+//            Thread.Sleep(msFromStart);
+//            MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.New));
+//            if (cancelRequest)
+//            {
+//                Thread.Sleep(100);
+//                MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(opponent, MatchRequestEventArgs.EStatus.Canceled));
+//            }
+//        });
+//        th.Start();
+//    }
+//}
 
 /// <summary>
 /// Event args derived class for communication between unity client and web client
@@ -88,20 +88,59 @@ public class MatchRequestEventArgs : EventArgs
     }
 }
 
+/// <summary>
+/// Handles all match request popups and logic
+/// </summary>
 public class MatchRequestHandler : MonoBehaviour
 {
+    // ---- Events ----
     public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
+
+    // ---- Public fields / properties ----
 
     public UIController UIController { get; private set; }
     public PopupPanel PopupPanel { get; private set; }
 
+    /// <summary>
+    /// Update flag
+    /// </summary>
     private bool update;
+    /// <summary>
+    /// Newest match request information.
+    /// </summary>
+    private MatchRequestEventArgs MatchRequestInfo { get; set; }
+    /// <summary>
+    /// List of "updater" which handles match request response in the appropiate way depending.
+    /// </summary>
     private List<Func<MatchRequestEventArgs, bool>> popupUpdaters;
-    public MatchRequestEventArgs MatchRequestInfo { get; set; }
 
-    // Test field: simulate client
-    // TODO: Replace with real client
-    //CientMatchReq client;
+    // ---- Event handlers ----
+
+    public void OnSendingMatchRequest(object sender, MatchRequestEventArgs e)
+    {
+        // Set popup
+        var popup = PopupPanel.InstanciateWaitingPopupCancelButton();
+        popup.Text = "Waiting for \n<color=#66FFD9><b>" + e.User.UserName + "</b></color>";
+        popup.CancelButton.onClick.AddListener(() =>
+        {
+            Destroy(popup.gameObject);
+            Debug.Log("CancelButton clicked");
+            MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(e.User, MatchRequestEventArgs.EStatus.Canceled));
+        });
+        popup.StatorAnimation.StartRotate(1);
+        
+        // Set popup updater function
+        var popupUpdater = MatchRequestResponseUpdaterGen(popup, e.User);
+        popupUpdaters.Add(popupUpdater);
+        popup.Disabled += (sender_, e_) => popupUpdaters.Remove(popupUpdater);
+        
+        // Notify web client
+        MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(e.User, MatchRequestEventArgs.EStatus.New));
+    }
+
+    public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e) { MatchRequestInfo = e; update = true; }
+
+    // ---- Private methods ----
 
     private void Awake()
     {
@@ -144,35 +183,10 @@ public class MatchRequestHandler : MonoBehaviour
         }
     }
 
-    ///// Event handlers /////
 
-    private void OnSendingMatchRequest(object sender, MatchRequestEventArgs e)
-    {
-        // Set popup
-        var popup = PopupPanel.InstanciateWaitingPopupCancelButton();
-        popup.Text = "Waiting for \n<color=#66FFD9><b>" + e.User.UserName + "</b></color>";
-        popup.CancelButton.onClick.AddListener(() =>
-        {
-            Destroy(popup.gameObject);
-            Debug.Log("CancelButton clicked");
-            MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(e.User, MatchRequestEventArgs.EStatus.Canceled));
-        });
-        popup.StatorAnimation.StartRotate(1);
-        
-        // Set popup updater function
-        var popupUpdater = MatchRequestResponseUpdaterGen(popup, e.User);
-        popupUpdaters.Add(popupUpdater);
-        popup.Disabled += (sender_, e_) => popupUpdaters.Remove(popupUpdater);
-        
-        // Notify web client
-        MatchRequestUpdated?.Invoke(this, new MatchRequestEventArgs(e.User, MatchRequestEventArgs.EStatus.New));
-    }
+    // ---- Popup updater functions and generators ----
 
-    public void OnMatchRequestUpdated(object sender, MatchRequestEventArgs e) { MatchRequestInfo = e; update = true; }
-
-///// Popup updater functions and generators /////
-
-private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
+    private bool NewMatchRequestUpdater(MatchRequestEventArgs matchRequest)
     {
         if (matchRequest.Status == MatchRequestEventArgs.EStatus.New)
         {

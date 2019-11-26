@@ -29,20 +29,23 @@ using System.Threading;
 //    }
 //}
 
+/// <summary>
+/// Handles the Opponent menu and its components.
+/// </summary>
 public class OpponentsMenu : MonoBehaviour
 {
+    ///// Events /////
+
+    public event EventHandler Exiting;
+    public event EventHandler UpdatingOpponentList;
+    public event EventHandler<MatchRequestEventArgs> SendingMatchRequest;
+
     ////// Prefabs /////
 
     /// <summary>
     /// OpponentSlot prefab public slot, this field should be set through Unity editor and not changed via scripting.
     /// </summary>
     public GameObject OpponentSlot;
-
-    ///// Events /////
-
-    public event EventHandler Exiting;
-    public event EventHandler UpdatingOpponentList;
-    public event EventHandler<MatchRequestEventArgs> SendingMatchRequest;
 
     ////// Properties /////
 
@@ -63,6 +66,11 @@ public class OpponentsMenu : MonoBehaviour
 
     ///// Public methods /////
 
+    /// <summary>
+    /// Handles <see cref="UIController.State"/> changes
+    /// </summary>
+    /// <param name="sender">Must be the <see cref="UIController"/> instance</param>
+    /// <param name="e">Ignored</param>
     public void OnMenuStateChange(object sender, EventArgs e)
     {
         UIController ui = sender as UIController;

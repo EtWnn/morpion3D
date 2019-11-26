@@ -5,16 +5,26 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 
+/// <summary>
+/// Handles the popup instanciation and the background.
+/// </summary>
 public class PopupPanel : MonoBehaviour
 {
+    // ---- Prefabs ----
+    // Set through Unity editor
+
     public GameObject BasicPopupGO;
     public GameObject TwoButtonPopupGO;
     public GameObject WaitingPopupGO;
     public GameObject WaitingPopupCancelButtonGO;
     public GameObject TimeoutPopupGO;
 
+    // ---- Private fields / properties ----
+
     private Image background;
     private int activePopupCount = 0;
+
+    // ---- Public methods ----
 
     public void SetBackgroundActive(bool value) { background.enabled = value; }
 
@@ -62,6 +72,8 @@ public class PopupPanel : MonoBehaviour
     }
 
     public void SetActive(bool value) => gameObject.SetActive(value);
+
+    // ---- Private methods ----
 
     void Awake() { background = GetComponent<Image>(); }
 

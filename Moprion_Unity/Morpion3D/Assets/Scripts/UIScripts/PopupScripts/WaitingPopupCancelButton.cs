@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// Handle popup with a waiting animation <see cref="StatorAnimation"/> and a Cancel button.
+/// </summary>
 public class WaitingPopupCancelButton : PopupBase
 {
     public Button CancelButton { get; private set; }

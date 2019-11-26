@@ -2,9 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Script for player pattern in UI (Options menu).
+/// Make its attached object rotate, and implement material swaping when selected.
+/// </summary>
 public class PlayerPatternUI : MonoBehaviour
 {
-    public Camera Camera;
+    // ---- Public fields / properties ----
 
     [Range(0.1f, 10f)]
     public float RotationSpeed=1;
@@ -12,15 +16,25 @@ public class PlayerPatternUI : MonoBehaviour
     public Material DefaultMaterial;
     public Material SelectedMaterial;
 
+    // ---- Private fields / properties ----
+
     private bool rotationRunning;
     private Coroutine rotationCoroutine;
     private MeshRenderer meshRenderer;
 
+    // ---- Event handers ----
+
+    /// <summary>
+    /// Event handler for UnityEvent Toggled.
+    /// </summary>
+    /// <param name="value"></param>
     public void OnToggled(bool value)
     {
         SetRotationActive(value);
         meshRenderer.material = value ? SelectedMaterial : DefaultMaterial;
     }
+
+    // ---- Private methods ----
 
     private void Awake() => meshRenderer = GetComponent<MeshRenderer>();
 

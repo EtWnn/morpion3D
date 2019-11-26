@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+/// <summary>
+/// Base class for all popups. Define Enable / Disbale events which are triggered on GameObject enabled / disabled 
+/// </summary>
 public class PopupBase : MonoBehaviour
 {
     public event EventHandler Enabled;

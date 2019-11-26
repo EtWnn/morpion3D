@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// Handle popup with a timeout <see cref="StatorAnimation"/> and Accept / decline popup.
+/// </summary>
 public class TimeoutPopup : PopupBase
 {
     public Button DeclineButton { get; private set; }

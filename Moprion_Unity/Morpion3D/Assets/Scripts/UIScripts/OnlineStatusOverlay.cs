@@ -6,29 +6,35 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-internal class TestClient
-{
-    public event EventHandler Connected;
-    public event EventHandler Disconnected;
+//internal class TestClient
+//{
+//    public event EventHandler Connected;
+//    public event EventHandler Disconnected;
 
-    public void Start()
-    {
-        Thread thread = new Thread(() =>
-        {
-            while(true)
-            {
-                Connected?.Invoke(this, EventArgs.Empty);
-                Thread.Sleep(500);
-                Disconnected?.Invoke(this, EventArgs.Empty);
-                Thread.Sleep(500);
-            }
-        });
-        thread.Start();
-    }
-}
+//    public void Start()
+//    {
+//        Thread thread = new Thread(() =>
+//        {
+//            while(true)
+//            {
+//                Connected?.Invoke(this, EventArgs.Empty);
+//                Thread.Sleep(500);
+//                Disconnected?.Invoke(this, EventArgs.Empty);
+//                Thread.Sleep(500);
+//            }
+//        });
+//        thread.Start();
+//    }
+//}
 
+
+/// <summary>
+/// Handles the connection status indicator.
+/// </summary>
 public class OnlineStatusOverlay : MonoBehaviour
 {
+    // ---- Enums ----
+
     public enum EState
     {
         None,
@@ -36,7 +42,7 @@ public class OnlineStatusOverlay : MonoBehaviour
         Online,
     }
 
-    SharedUpdatable<EState> State;
+    // ---- Public fields / properties ----
 
     public Color OfflineColor;
     public Color OnlineColor;
@@ -44,9 +50,14 @@ public class OnlineStatusOverlay : MonoBehaviour
     public string OfflineText;
     public string OnlineText;
 
+    // ---- Private fields / properties ----
+
+    SharedUpdatable<EState> State;
     private Image image;
     private TextMeshProUGUI text;
-    
+
+    // ---- Event handlers ----
+
     public void OnConnected(object sender, EventArgs e)
     {
         State.Write(EState.Online);
@@ -58,7 +69,8 @@ public class OnlineStatusOverlay : MonoBehaviour
         State.Write(EState.Offline);
     }
 
-    // Start is called before the first frame update
+    // ---- Private methods ----
+
     void Awake()
     {
         OfflineColor = Color.red;

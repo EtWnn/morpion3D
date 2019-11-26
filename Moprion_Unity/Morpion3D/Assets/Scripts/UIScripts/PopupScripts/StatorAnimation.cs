@@ -4,11 +4,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 
-
+/// <summary>
+/// Handles the animated "Circle". Implements 3 animations: Timeout, Rotate/Loading, Pulse
+/// </summary>
 public class StatorAnimation : MonoBehaviour
 {
-    public EventWrapper<TEventArgs<EAnimation>> Finished = new EventWrapper<TEventArgs<EAnimation>>();
-    
+    // ---- Enums ----
+
     public enum EAnimation
     {
         Timeout,
@@ -16,9 +18,17 @@ public class StatorAnimation : MonoBehaviour
         Pulse,
     }
 
+    // ---- Events ----
+
+    public EventWrapper<TEventArgs<EAnimation>> Finished = new EventWrapper<TEventArgs<EAnimation>>();
+
+    // ---- Private fields / properties ----
+
     private Image stator;
     private Image rotator;
     private Color baseStatorColor;
+
+    // ---- Public methods ----
 
     public void StartTimeout(float duration)
     {
@@ -38,10 +48,15 @@ public class StatorAnimation : MonoBehaviour
         StartCoroutine(RotateRotatorAnim(period, numTurns));
     }
 
+    /// <summary>
+    /// Interupt all the running Coroutines / animations.
+    /// </summary>
     public void Interrupt()
     {
         StopAllCoroutines();
     }
+
+    // ---- Private methods ----
 
     // Start is called before the first frame update
     void Awake()

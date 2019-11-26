@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// EventArgs derivated class containing IP and Port string properties.
+/// </summary>
 public class ServerInfoEventArgs : EventArgs
 {
     public string IP { get; set; }
@@ -12,6 +15,9 @@ public class ServerInfoEventArgs : EventArgs
     public ServerInfoEventArgs(string ip, string port) { IP = ip; Port = port; }
 }
 
+/// <summary>
+/// EventArgs derivated class containing Username string property.
+/// </summary>
 public class UsernameEventArgs : EventArgs
 {
     public string Username;
@@ -19,6 +25,9 @@ public class UsernameEventArgs : EventArgs
     public UsernameEventArgs(string username) { Username = username; }
 }
 
+/// <summary>
+/// Enum oof the 2 playable patterns.
+/// </summary>
 public enum EPlayerPatterns
 {
     None,
@@ -26,12 +35,31 @@ public enum EPlayerPatterns
     Tore,
 }
 
+/// <summary>
+/// Handles the Options menu and its components
+/// </summary>
 public class OptionsMenu : MonoBehaviour
 {
+    // ---- Events ----
+
+    /// <summary>
+    /// Triggered when exiting the Option menu.
+    /// </summary>
     public event EventHandler Exiting;
+    /// <summary>
+    /// Triggered when new IP or port value are entered and the validate button is pressed.
+    /// </summary>
     public event EventHandler<ServerInfoEventArgs> ServerInfoEntered;
+    /// <summary>
+    /// Triggered when a username is entered, the validate button is pressed and the client is currently connected to rhe server.
+    /// </summary>
     public event EventHandler<UsernameEventArgs> UsernameEntered;
+    /// <summary>
+    /// Triggered when the selected player pattern changes
+    /// </summary>
     public event EventHandler<TEventArgs<EPlayerPatterns>> PlayerPatternChanged;
+
+    // ---- Public fields / properties ----
 
     public Button BackButton { get; private set; }
     public Button ValidateButton { get; private set; }
@@ -47,13 +75,22 @@ public class OptionsMenu : MonoBehaviour
         private set { _playerPattern = value; PlayerPatternChanged?.Invoke(this, new TEventArgs<EPlayerPatterns>(value)); }
     }
 
+    // ---- Private fields / properties ----
+
     private SharedUpdatable<bool> isClientConnected;
+
+    // ---- Public methods ----
 
     public void SetActive(bool value)
     {
         gameObject.SetActive(value);
     }
 
+    /// <summary>
+    /// Handles <see cref="UIController.State"/> changes
+    /// </summary>
+    /// <param name="sender">Must be the <see cref="UIController"/> instance</param>
+    /// <param name="e">Ignored</param>
     public void OnMenuStateChange(object sender, EventArgs e)
     {
         UIController ui = sender as UIController;
@@ -65,6 +102,8 @@ public class OptionsMenu : MonoBehaviour
 
     public void OnConnected(object sender, EventArgs e) => isClientConnected?.Write(true);
     public void OnDisconnected(object sender, EventArgs e) => isClientConnected?.Write(false);
+
+    // ---- Private methods / properties ----
 
     private void Awake()
     {
@@ -114,7 +153,10 @@ public class OptionsMenu : MonoBehaviour
     {
         isClientConnected.TryProcessIfNew();
     }
-
+    
+    /// <summary>
+    /// Validate each new char added.
+    /// </summary>
     char OnValidateUsernameInput(string text, int charIndex, char addedChar)
     {
         if (!Char.IsLetterOrDigit(addedChar) && !(addedChar == '_'))
@@ -122,6 +164,9 @@ public class OptionsMenu : MonoBehaviour
         return addedChar;
     }
 
+    /// <summary>
+    /// Validate each new char added.
+    /// </summary>
     char OnValidateServerIpInput(string text, int charIndex, char addedChar)
     {
         if (!Char.IsDigit(addedChar) && addedChar != '.')
@@ -129,6 +174,9 @@ public class OptionsMenu : MonoBehaviour
         return addedChar;
     }
 
+    /// <summary>
+    /// Validate each new char added.
+    /// </summary>
     char OnValidateServerPortInput(string text, int charIndex, char addedChar)
     {
         if (!Char.IsDigit(addedChar))
@@ -136,6 +184,9 @@ public class OptionsMenu : MonoBehaviour
         return addedChar;
     }
 
+    /// <summary>
+    /// Setup code for the playable patterns UI elements
+    /// </summary>
     private void SetupSelectPatternTogglesOnStart()
     {
         // Get components and CrossToreUI scripts
