@@ -74,7 +74,7 @@ public class UIController : MonoBehaviour
 
     ///// Event handlers /////
 
-    public void OnMainStateChange(object sender, EventArgs e)
+    public void OnStateChange(object sender, EventArgs e)
     {
         var ms = sender as MainScript;
         if (ms && ms.State == EState.InMainMenu)
@@ -89,7 +89,7 @@ public class UIController : MonoBehaviour
 
     private void OnSubMenuExiting(object sender, EventArgs e) => State = EStateUI.InMainMenu;
 
-    public void OnGameTurnChanged(object sender, TEventArgs<GridScript.PlayerEstate> e)
+    public void OnGameTurnChanged(object sender, TEventArgs<GridScript.EPlayerTurn> e)
     {
         TurnIndicator.SetTurn(e.Data);
     }

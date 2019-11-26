@@ -8,11 +8,15 @@ public class ServerInfoEventArgs : EventArgs
 {
     public string IP { get; set; }
     public string Port { get; set; }
+
+    public ServerInfoEventArgs(string ip, string port) { IP = ip; Port = port; }
 }
 
 public class UsernameEventArgs : EventArgs
 {
     public string Username;
+
+    public UsernameEventArgs(string username) { Username = username; }
 }
 
 public enum EPlayerPatterns
@@ -30,6 +34,8 @@ public class OptionsMenu : MonoBehaviour
     public event EventHandler<TEventArgs<EPlayerPatterns>> PlayerPatternChanged;
 
     public Button BackButton { get; private set; }
+    public Button ValidateButton { get; private set; }
+
     public TMP_InputField UsernameField { get; private set; }
     public TMP_InputField ServerIPField { get; private set; }
     public TMP_InputField ServerPortField { get; private set; }
@@ -58,6 +64,8 @@ public class OptionsMenu : MonoBehaviour
     private void Awake()
     {
         BackButton = transform.Find("Back Button").GetComponent<Button>();
+        ValidateButton = transform.Find("Validate Button").GetComponent<Button>();
+
         UsernameField = transform.Find("Username/InputField (TMP)").GetComponent<TMP_InputField>();
         ServerIPField = transform.Find("ServerIP/InputField (TMP)").GetComponent<TMP_InputField>();
         ServerPortField = transform.Find("ServerPort/InputField (TMP)").GetComponent<TMP_InputField>();
@@ -66,11 +74,20 @@ public class OptionsMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        var mainScript = GetComponentInParent<MainScript>();
+        ServerIPField.text = mainScript.Client.localAddr.ToString();
+        ServerPortField.text = mainScript.Client.port.ToString();
+
         UsernameField.onValidateInput += OnValidateUsernameInput;
         ServerIPField.onValidateInput += OnValidateServerIpInput;
         ServerPortField.onValidateInput += OnValidateServerPortInput;
-        BackButton.onClick.AddListener(OnExiting);
 
+        BackButton.onClick.AddListener(() => Exiting?.Invoke(this, EventArgs.Empty));
+        ValidateButton.onClick.AddListener(() => 
+        { 
+            ServerInfoEntered?.Invoke(this, new ServerInfoEventArgs(ServerIPField.text, ServerPortField.text));
+            UsernameEntered?.Invoke(this, new UsernameEventArgs(UsernameField.text));
+        });
         SetupSelectPatternTogglesOnStart();
     }
 
@@ -93,11 +110,6 @@ public class OptionsMenu : MonoBehaviour
         if (!Char.IsDigit(addedChar))
             addedChar = '\0';
         return addedChar;
-    }
-
-    protected virtual void OnExiting()
-    {
-        Exiting?.Invoke(this, EventArgs.Empty);
     }
 
     private void SetupSelectPatternTogglesOnStart()

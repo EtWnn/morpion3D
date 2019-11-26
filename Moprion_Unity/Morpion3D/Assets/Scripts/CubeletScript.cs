@@ -3,55 +3,68 @@ using UnityEngine;
 
 public class CubeletScript : MonoBehaviour
 {
+    // ---- Events ----
+
+    /// <summary>Fired when the cubelet GameObject is clicked.</summary>
     public event EventHandler Clicked;
-    ///// Public fields / properties /////
     
+    // ---- Public fields / properties ----
+    
+    /// <summary>Field set through UnityEditor.</summary>
     public Color BaseColor;
+    /// <summary>Field set through UnityEditor.</summary>
     public Color HoverColor;
-    
+
+    /// <summary>True if the cubelet is filled.</summary>
     public bool Filled { get; private set; }
+    /// <summary>Reference to the current filling GameObject, null if the cubelet is not filled.</summary>
     public GameObject CurrentFillingObject { get; private set; }
+    /// <summary>Cubelet associated position in the grid.</summary>
     public System.Numerics.Vector3 Position { get; set; }
 
-    ///// Private fields / properties /////
+    // ---- Private fields / properties ----
 
-    private MeshRenderer MeshRenderer;
-    private Action updateFunction;
-    
-    private Action onMouseOverFunction;
-    private Action onMouseExitFunction;
+    private bool inGame;
+    private MeshRenderer meshRenderer;
 
-    private GridScript gridScript;
+    // ---- Public methods ----
 
-    ///// Public methods /////
-
+    /// <summary>Activate / Desactivate the attached GameObject.</summary>
     public void SetActive(bool value) => gameObject.SetActive(value);
 
+    /// <summary>
+    /// Handle <see cref="MainScript.State"/> changes.
+    /// </summary>
+    /// <param name="sender">Must be the <see cref="MainScript"/></param>
+    /// <param name="args">Ignored.</param>
     public void OnStateChange(object sender, EventArgs args)
     {
         MainScript ms = sender as MainScript;
         switch (ms.State)
         {
             case EState.InGame:
-                updateFunction = InGameUpdateBehaviouor;
-                onMouseOverFunction = InGameOnMouseOverBehaviour;
-                onMouseExitFunction = InGameOnMouseExitBehaviour;
+                inGame = true;
                 break;
             default:
-                updateFunction = NoOpBehaviour;
-                onMouseOverFunction = NoOpBehaviour;
-                onMouseExitFunction = NoOpBehaviour;
+                inGame = false;
                 break;
         }
     }
 
+    /// <summary>
+    /// Clear cubelet filling object and reset its material color.
+    /// </summary>
     public void ResetCubelet()
     {
         if (CurrentFillingObject != null)
             Destroy(CurrentFillingObject);
         Filled = false;
+        meshRenderer.material.color = BaseColor;
     }
 
+    /// <summary>
+    /// Fill the cubelet with a clone of <paramref name="prefab"/>, if already filled, destory the previous filling GameObject.
+    /// </summary>
     public void FillWith(GameObject prefab)
     {
         if (Filled)
@@ -60,63 +73,34 @@ public class CubeletScript : MonoBehaviour
         Filled = true;
     }
 
-    ///// Private methods /////
+    // ---- Private methods ----
 
     private void Awake()
     {
         Filled = false;
         CurrentFillingObject = null;
 
-        MeshRenderer = GetComponent<MeshRenderer>();
+        meshRenderer = GetComponent<MeshRenderer>();
 
-        BaseColor = MeshRenderer.material.color;
+        BaseColor = meshRenderer.material.color;
         Color hoverColor = BaseColor;
         hoverColor.a = 0.4f;
         HoverColor = hoverColor;
-
-        updateFunction = NoOpBehaviour;
-        onMouseOverFunction = NoOpBehaviour;
-        onMouseExitFunction = NoOpBehaviour;
-
-        gridScript = GetComponentInParent<GridScript>();
     }
 
-    // Update is called once per frame
     private void OnMouseOver()
     {
-        onMouseOverFunction();
+        if (inGame)
+        {
+            meshRenderer.material.color = HoverColor;
+            if (Input.GetMouseButtonDown(0))
+                Clicked?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void OnMouseExit()
     {
-        onMouseExitFunction();
-    }
-
-    private void Update()
-    {
-        updateFunction();
-    }
-
-    private void NoOpBehaviour() { }
-
-    private void InGameOnMouseOverBehaviour()
-    {
-        MeshRenderer.material.color = HoverColor;
-        if (Input.GetMouseButtonDown(0))
-            Clicked?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void InGameOnMouseExitBehaviour()
-    {
-        MeshRenderer.material.color = BaseColor;
-    }
-
-    private void InGameUpdateBehaviouor()
-    {
-        if (Filled && Input.GetKeyDown(KeyCode.R))
-        {
-            Destroy(CurrentFillingObject);
-            Filled = false;
-        }
+        if (inGame)
+            meshRenderer.material.color = BaseColor;
     }
 }

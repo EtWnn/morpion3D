@@ -264,5 +264,18 @@ namespace MyClient
             var vec = e.Data;
             Messaging.SendPositionPlayer(this, vec);
         }
+
+        public void OnServerInfoUpdated(object sender, ServerInfoEventArgs e)
+        {
+            tryDisconnect();
+            localAddr = IPAddress.Parse(e.IP);
+            port = int.Parse(e.Port);
+            tryConnect();
+        }
+
+        public void OnUsernameUpdate(object sender, UsernameEventArgs e)
+        {
+            Messaging.SendUserName(this, e.Username);
+        }
     }
 }
