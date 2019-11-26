@@ -20,7 +20,6 @@ public class GridScript : MonoBehaviour
         IsOpponentTurn,
         PlayerWon,
         OpponentWon,
-        OpponentDisconnected,
     }
 
     // ---- Events ---
@@ -80,7 +79,6 @@ public class GridScript : MonoBehaviour
 
     /// <summary>Activate / Desactivate the attached GameObject.</summary>
     public void SetActive(bool value) => gameObject.SetActive(value);
-
 
     // ---- Events Handlers ----
 

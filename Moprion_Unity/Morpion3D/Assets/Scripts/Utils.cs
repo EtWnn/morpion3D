@@ -173,12 +173,12 @@ public class SharedUpdatable<T>
     private T data;
     private bool upToDate;
 
-    public SharedUpdatable(T value = default)
+    public SharedUpdatable(T value = default, Action<T> updateAction = default)
     {
         lockObject = new object();
         data = value;
         upToDate = true;
-        UpdateAction = (_) => {};
+        UpdateAction = updateAction;
     }
 
     /// <summary>

@@ -7,7 +7,34 @@ using System;
 
 public class TurnIndicator : MonoBehaviour
 {
+    // ---- Events ----
+
+    /// <summary>
+    /// Fired when a game is finished and the player wants to return the menu.
+    /// </summary>
     public event EventHandler Exiting;
+
+    // ---- Public fields and properties ----
+
+    /// <summary>
+    /// Button allowing the player to return on the menu when a game is finished.
+    /// </summary>
+    public Button BackButton { get; private set; }
+
+    private TextMeshProUGUI _tmpText;
+    /// <summary>
+    /// Text to display on the right hand side of the "grid" game board.
+    /// </summary>
+    public string Text
+    {
+        get => _tmpText.text;
+        set => _tmpText.text = value;
+    }
+
+    // ---- Private fields / properties ----
+
+    private Image background;
+    private SharedUpdatable<bool> opponentHasDisconectoned;
 
     private const string PlayerWonText = "<color=#66FFD9><size=110%>You</size=150%></color=#66FFD9> won !";
     private const string PlayerLoseText = "<color=#66FFD9><size=110%>You</size=150%></color=#66FFD9> lose !";
@@ -15,25 +42,18 @@ public class TurnIndicator : MonoBehaviour
     private const string OpponentTurnText = "<color=#66FFD9><size=110%>Opponent's</size=150%></color=#66FFD9> turn !";
     private const string OpponentDisconnectedText = "Your opponent is <color=#66FFD9><size=110%></size=150%>disconnected</color=#66FFD9> !";
 
-    private TextMeshProUGUI _tmpText;
-    public string Text
-    {
-        get => _tmpText.text;
-        set => _tmpText.text = value;
-    }
+    // ---- Event handlers
 
-    public float TextCoroutinePerid = 1f;
-    public Button BackButton { get; private set; }
+    /// <summary>
+    /// Handles opponent disconnection. Allow the player to return to the menu.
+    /// </summary>
+    /// <param name="sender">Ignored</param>
+    /// <param name="e">Ignored</param>
+    public void OnOpponentDisconnected(object sender, EventArgs e) => opponentHasDisconectoned.Write(true);
 
-    private Image background;
-    private SharedUpdatable<bool> opponentHasDisconectoned;
+    // ---- Public methods ----
 
     public void SetActive(bool value) => gameObject.SetActive(value);
-
-    public void OnOpponentDisconnected(object sender, EventArgs e)
-    {
-        opponentHasDisconectoned.Write(true);
-    }
 
     public void SetTurn(GridScript.EPlayerTurn playerEstate)
     {

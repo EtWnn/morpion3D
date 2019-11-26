@@ -1,6 +1,11 @@
 ﻿using System;
 using UnityEngine;
 
+/// <summary>
+/// Script attached to the cubelet GameObject.
+/// Handles the click and provide methods to fill the cubelet with a GameObject.
+/// Implement a color swap when hovering over the cubelet in game.
+/// </summary>
 public class CubeletScript : MonoBehaviour
 {
     // ---- Events ----
@@ -83,6 +88,7 @@ public class CubeletScript : MonoBehaviour
         meshRenderer = GetComponent<MeshRenderer>();
 
         BaseColor = meshRenderer.material.color;
+        // Create hover color from base color
         Color hoverColor = BaseColor;
         hoverColor.a = 0.4f;
         HoverColor = hoverColor;

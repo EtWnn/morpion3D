@@ -5,29 +5,29 @@ using UnityEngine.UI;
 using MyClient.Models;
 using System.Threading;
 
-internal class OpponentListUpdater
-{
-    public event EventHandler<TEventArgs<List<User>>> OpponentListUpdated;
+//internal class OpponentListUpdater
+//{
+//    public event EventHandler<TEventArgs<List<User>>> OpponentListUpdated;
 
-    public void OnUpdatingOpponentList(object sender, EventArgs e)
-    {
-        Thread thread = new Thread(() =>
-        {
-            List<User> opponents = new List<User>();
-            System.Random rd = new System.Random();
-            int num = rd.Next(3, 15);
-            for (int i = 0; i < num; i++)
-                opponents.Add(new User(i, "Opponent " + i));
-            RaiseOpponentListUpdated(opponents);
-        });
-        thread.Start();
-    }
+//    public void OnUpdatingOpponentList(object sender, EventArgs e)
+//    {
+//        Thread thread = new Thread(() =>
+//        {
+//            List<User> opponents = new List<User>();
+//            System.Random rd = new System.Random();
+//            int num = rd.Next(3, 15);
+//            for (int i = 0; i < num; i++)
+//                opponents.Add(new User(i, "Opponent " + i));
+//            RaiseOpponentListUpdated(opponents);
+//        });
+//        thread.Start();
+//    }
 
-    protected virtual void RaiseOpponentListUpdated(List<User> opponents)
-    {
-        OpponentListUpdated?.Invoke(this, new TEventArgs<List<User>>(opponents));
-    }
-}
+//    protected virtual void RaiseOpponentListUpdated(List<User> opponents)
+//    {
+//        OpponentListUpdated?.Invoke(this, new TEventArgs<List<User>>(opponents));
+//    }
+//}
 
 public class OpponentsMenu : MonoBehaviour
 {
@@ -53,7 +53,7 @@ public class OpponentsMenu : MonoBehaviour
     /// Either the selected opponent or null if no opponent is selected
     /// </summary>
     public User SelectedUser { get; private set; }
-    
+
     ////// Private fields //////
 
     private GameObject ViewportContent;
@@ -61,7 +61,7 @@ public class OpponentsMenu : MonoBehaviour
     private SharedUpdatable<List<User>> Opponents;
     private SharedUpdatable<bool> isClientConnected;
 
-    ///// Public method /////
+    ///// Public methods /////
 
     public void OnMenuStateChange(object sender, EventArgs e)
     {
@@ -80,7 +80,10 @@ public class OpponentsMenu : MonoBehaviour
     /// </summary>
     /// <param name="sender">Not used.</param>
     /// <param name="e">Must contains the updated opponent list in its Users field.</param>
-    public void OnOpponentListUpdated(object sender, TEventArgs<List<User>> e) => Opponents.Write(e.Data);
+    public void OnOpponentListUpdated(object sender, TEventArgs<List<User>> e)
+    { 
+        if (Opponents != null) Opponents.Write(e.Data);
+    }
 
     public void OnConnected(object sender, EventArgs e) => isClientConnected?.Write(true);
     public void OnDisconnected(object sender, EventArgs e) => isClientConnected?.Write(false);

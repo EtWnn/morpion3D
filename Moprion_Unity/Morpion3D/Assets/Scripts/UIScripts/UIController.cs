@@ -5,8 +5,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using MyClient.Models;
 
+/// <summary>
+/// Allow to manage and draw all UI elements on the same Canvas.
+/// </summary>
 public class UIController : MonoBehaviour
 {
+    // ---- Enums ----
+
     public enum EStateUI
     {
         Default,
@@ -15,6 +20,20 @@ public class UIController : MonoBehaviour
         SearchingOpponents,
         InOpponentsMenu,
     }
+    
+    // ---- Events ----
+
+    public event EventHandler StateChange;
+    /// <summary>
+    /// Notify that UI elements are ready to begin transitioning from menu to game.
+    /// </summary>
+    public event EventHandler ReadyToGame;
+    /// <summary>
+    /// Notify that UI elements are ready to begin transitioning from game to menu.
+    /// </summary>
+    public event EventHandler ReadyToMenu;
+
+    // ---- Public fields / properties ----
 
     public OnlineStatusOverlay OnlineStatusOverlay { get; private set; }
     public MainMenu MainMenu { get; private set; }
@@ -24,9 +43,6 @@ public class UIController : MonoBehaviour
     public TurnIndicator TurnIndicator { get; private set; }
     public MatchRequestHandler MatchRequestHandler { get; private set; }
 
-    public event EventHandler ReadyToGame;
-    public event EventHandler StateChange;
-    public event EventHandler ReadyToMenu;
 
     private EStateUI _state;
     public EStateUI State
@@ -35,51 +51,22 @@ public class UIController : MonoBehaviour
         private set { _state = value; StateChange?.Invoke(this, EventArgs.Empty); }
     }
 
+    // ---- Private fields / properties ----
+
     private Canvas canvas;
     private GameObject GameCommandsOverlay;
-    // Start is called before the first frame update
-    void Awake()
-    {
-        canvas = GetComponentInChildren<Canvas>();
-        var MainMenuGO = transform.Find("Canvas/MainMenuGO");
-        MainMenu = MainMenuGO.GetComponent<MainMenu>();
 
-        OptionsMenu = transform.Find("Canvas/OptionsMenuGO").GetComponent<OptionsMenu>();
-        OnlineStatusOverlay = transform.Find("Canvas/OnlineStatusGO").GetComponent<OnlineStatusOverlay>();
-        OpponentsMenu = transform.Find("Canvas/OpponentsMenuGO").GetComponent<OpponentsMenu>();
-        var popupPanelGo = transform.Find("Canvas/PopupPanel");
-        PopupPanel = popupPanelGo.GetComponent<PopupPanel>();
-        MatchRequestHandler = popupPanelGo.GetComponent<MatchRequestHandler>();
-        TurnIndicator = transform.Find("Canvas/TurnIndicator").GetComponent<TurnIndicator>();
-        GameCommandsOverlay = transform.Find("Canvas/GameCommandsOverlay").gameObject;
+    // ---- Event wrappers ----
 
-        //// Hack set OptionMenu active so its awke script is run.
-        //OptionsMenu.SetActive(true);
-    }
+    public void RaiseReadyToGame() => ReadyToGame?.Invoke(this, EventArgs.Empty);
 
-    private void Start()
-    {
-        //// Hack end: desactivate option menu
-        //OptionsMenu.SetActive(true);
+    // ---- Event handlers ----
 
-        StateChange += MainMenu.OnMenuStateChange;
-        StateChange += OptionsMenu.OnMenuStateChange;
-        StateChange += OpponentsMenu.OnMenuStateChange;
-
-        MainMenu.StartButton.onClick.AddListener(() => State = EStateUI.InOpponentsMenu);
-        MainMenu.OptionsButton.onClick.AddListener(() => State = EStateUI.InOptionsMenu);
-        MainMenu.QuitButton.onClick.AddListener(() => Application.Quit(0));
-
-        OptionsMenu.Exiting += OnSubMenuExiting;
-        OpponentsMenu.Exiting += OnSubMenuExiting;
-
-        TurnIndicator.Exiting += (sender, e) => ReadyToMenu?.Invoke(this, EventArgs.Empty);
-
-        State = EStateUI.InMainMenu;
-    }
-
-    ///// Event handlers /////
-
+    /// <summary>
+    /// Handle <see cref="MainScript.State"/> changes.
+    /// </summary>
+    /// <param name="sender">Must be the <see cref="MainScript"/></param>
+    /// <param name="args">Ignored.</param>
     public void OnStateChange(object sender, EventArgs e)
     {
         var ms = sender as MainScript;
@@ -93,14 +80,57 @@ public class UIController : MonoBehaviour
 
     }
 
-    private void OnSubMenuExiting(object sender, EventArgs e) => State = EStateUI.InMainMenu;
-
+    /// <summary>
+    /// Handle player <see cref="GridScript.PlayerTurnChanged"/> events .
+    /// </summary>
+    /// <param name="sender">Ignored.</param>
+    /// <param name="args">Must contains the up-to-date player turn.</param>
     public void OnGameTurnChanged(object sender, TEventArgs<GridScript.EPlayerTurn> e)
     {
         TurnIndicator.SetTurn(e.Data);
     }
 
-    ///// Event wrappers /////
+    /// <summary>
+    /// Handles managed sub menu UI component exiting. Change <see cref="State"/> to <see cref="EStateUI.InMainMenu"/>. 
+    /// </summary>
+    /// <param name="sender">Ignored.</param>
+    /// <param name="e">Ignored.</param>
+    public void OnSubMenuExiting(object sender, EventArgs e) => State = EStateUI.InMainMenu;
 
-    public void RaiseReadyToGame() => ReadyToGame?.Invoke(this, EventArgs.Empty);
+    // ---- Private Methods ----
+
+    void Awake()
+    {
+        // Get components 
+        canvas = GetComponentInChildren<Canvas>();
+        MainMenu = transform.Find("Canvas/MainMenuGO").GetComponent<MainMenu>();
+        OptionsMenu = transform.Find("Canvas/OptionsMenuGO").GetComponent<OptionsMenu>();
+        OnlineStatusOverlay = transform.Find("Canvas/OnlineStatusGO").GetComponent<OnlineStatusOverlay>();
+        OpponentsMenu = transform.Find("Canvas/OpponentsMenuGO").GetComponent<OpponentsMenu>();
+        TurnIndicator = transform.Find("Canvas/TurnIndicator").GetComponent<TurnIndicator>();
+        GameCommandsOverlay = transform.Find("Canvas/GameCommandsOverlay").gameObject;
+        var popupPanelGo = transform.Find("Canvas/PopupPanel");
+        PopupPanel = popupPanelGo.GetComponent<PopupPanel>();
+        MatchRequestHandler = popupPanelGo.GetComponent<MatchRequestHandler>();
+    }
+
+    private void Start()
+    {
+        // Set sub menu event handler for State changes.
+        StateChange += MainMenu.OnMenuStateChange;
+        StateChange += OptionsMenu.OnMenuStateChange;
+        StateChange += OpponentsMenu.OnMenuStateChange;
+
+        // Subscribe event handlers provoking State changes
+        MainMenu.StartButton.onClick.AddListener(() => State = EStateUI.InOpponentsMenu);
+        MainMenu.OptionsButton.onClick.AddListener(() => State = EStateUI.InOptionsMenu);
+        MainMenu.QuitButton.onClick.AddListener(() => Application.Quit(0));
+        OptionsMenu.Exiting += OnSubMenuExiting;
+        OpponentsMenu.Exiting += OnSubMenuExiting;
+
+        // Subscribe event handler to notify MainScript the app can begin transitioning from game to menu.
+        TurnIndicator.Exiting += (sender, e) => ReadyToMenu?.Invoke(this, EventArgs.Empty);
+
+        State = EStateUI.InMainMenu;
+    }
 }

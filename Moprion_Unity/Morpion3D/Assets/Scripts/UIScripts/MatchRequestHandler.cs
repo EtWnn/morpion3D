@@ -133,6 +133,7 @@ public class MatchRequestHandler : MonoBehaviour
                     if (updater(MatchRequestInfo))
                     {
                         update = false;
+                        popupUpdaters.Remove(updater);
                         break;
                     }
 
