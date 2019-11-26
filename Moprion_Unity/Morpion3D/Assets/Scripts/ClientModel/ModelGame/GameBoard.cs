@@ -1,10 +1,21 @@
 ﻿using System;
 
 namespace MyClient.ModelGame
-{
+{   
+    /// <summary>
+    /// <para>Group the fonctionnalities of the GameBoard</para>
+    /// </summary>
     static class GameBoard
     {
+        // ---- Static Public methods ----
 
+        /// <summary>
+        /// <para>Initiate the GameBoard</para>
+        /// <para>Matrix of dimension <paramref name="gameBoardSize"/>^3 </para>
+        /// <para>Filled with <see cref="Cell.Empty"/> </para>
+        /// </summary>
+        /// <param name="gameBoardSize"></param>
+        /// <returns></returns>
         public static int[,,] gameBoardGeneration(int gameBoardSize)
         {
             int[,,] plateau = new int[gameBoardSize, gameBoardSize, gameBoardSize];
@@ -20,25 +31,14 @@ namespace MyClient.ModelGame
             }
             return plateau;
         }
-        public static void display(int[,,] tab)
-        {
-            int size = tab.GetLength(0);
-            string aff = "";
-            for (int x = 0; x < size; x++)
-            {
-                for (int y = 0; y < size; y++)
-                {
-                    for (int z = 0; z < size; z++)
-                    {
-                        aff += tab[x, y, z].ToString() + '\t';
-                    }
-                    aff += '\n';
-                }
-                aff += "\n\n";
-            }
-            Console.WriteLine(aff);
-        }
 
+        /// <summary>
+        /// Transform a matrix of dimension <paramref name="size"/>^3 in a list of dimension <paramref name="size"/>*3
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="arr"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public static T[] Flatten<T>(T[,,] arr, int size)
         {
             T[] arrFlattened = new T[size * size * size];
@@ -56,6 +56,13 @@ namespace MyClient.ModelGame
             return arrFlattened;
         }
 
+        /// <summary>
+        /// Transform a list of dimension <paramref name="size"/>*3 in a matrix of dimension <paramref name="size"/>^3 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="arr"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public static T[,,] Expand<T>(T[] arr, int size)
         {
             T[,,] arrExpanded = new T[size, size, size];

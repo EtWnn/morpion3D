@@ -11,26 +11,47 @@ using UnityEngine;
 
 namespace MyClient.Functions
 {
+    /// <summary>
+    /// Enumerate all the abbreviations of the commands the client may recieve
+    /// </summary>
     public enum NomCommande
     {
-        MSG, //message
-        USN, //username
-        OUS, //other users
-        MRQ, //match request
-        NPP, //New position played 
-        DGB, // game board
-        GRR, // request response
-        RGR, // recieve game request
-        NDC, // notification opponent disconnected
-        PNG // Ping
-        //RQS, //
+        /// <summary>message</summary>
+        MSG,
+        /// <summary>username</summary>
+        USN, 
+        /// <summary>other users</summary>
+        OUS, 
+        /// <summary>match request</summary>
+        MRQ, 
+        /// <summary>new position played</summary>
+        NPP,
+        /// <summary>game board</summary>
+        DGB,
+        /// <summary>request response</summary>
+        GRR,
+        /// <summary>recieve game request</summary>
+        RGR,
+        /// <summary>notification opponent disconnected</summary>
+        NDC,
+        /// <summary>ping</summary>
+        PNG 
 
     }
 
+    /// <summary>
+    /// Group all the methods which write on or read the stream
+    /// </summary>
     public class Messaging
     {
         //Serialization
 
+        /// <summary>
+        /// Transform a <see cref="NomCommande"/> in a list of <see cref="byte"/>
+        /// <para>Can be deserialized by the methods the server</para>
+        /// </summary>
+        /// <param name="nomCommande"></param>
+        /// <returns></returns>
         private static byte[] serializationMessage(NomCommande nomCommande)
         {
             
@@ -45,6 +66,13 @@ namespace MyClient.Functions
             return msg;
         }
 
+        /// <summary>
+        /// <para>Transform a <see cref="NomCommande"/> and a <see cref="string"/> in a list of <see cref="byte"/></para>
+        /// <para>Can be deserialized by the methods the server</para>
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="nomCommande"></param>
+        /// <returns></returns>
         private static byte[] serializationMessage(string message, NomCommande nomCommande)
         {
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
@@ -61,6 +89,13 @@ namespace MyClient.Functions
             return msg;
         }
 
+        /// <summary>
+        /// <para>Transform a <see cref="NomCommande"/> and a list of <see cref="byte"/> in a list of <see cref="byte"/></para>
+        /// <para>Can be deserialized by the methods the server</para>
+        /// </summary>
+        /// <param name="message_bytes"></param>
+        /// <param name="nomCommande"></param>
+        /// <returns></returns>
         private static byte[] serializationMessage(byte[] message_bytes, NomCommande nomCommande)
         {
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
@@ -75,6 +110,13 @@ namespace MyClient.Functions
             return msg;
         }
 
+        /// <summary>
+        /// <para>Transform a <see cref="int"/> representing an id and a list of <see cref="bool"/> in a list of <see cref="byte"/></para>
+        /// <para>Can be deserialized by <see cref="deserializationResponseOpponent(byte[])"/></para>
+        /// </summary>
+        /// <param name="idOpponent"></param>
+        /// <param name="response"></param>
+        /// <returns></returns>
         private static byte[] serializationResponseOpponent(int idOpponent, bool response)
         {
             byte[] idOpponent_bytes = BitConverter.GetBytes((Int16)idOpponent);
@@ -85,6 +127,11 @@ namespace MyClient.Functions
             return message;
         }
 
+        /// <summary>
+        /// Deserialized a list of <see cref="byte"/> serialized by the method <see cref="serializationResponseOpponent(int, bool)"/>
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
         private static Tuple<int, bool> deserializationResponseOpponent(byte[] bytes)
         {
             int byte_compt = 0;
@@ -93,6 +140,11 @@ namespace MyClient.Functions
             return Tuple.Create(idOpponent, response);
         }
 
+        /// <summary>
+        /// Return an object <see cref="User"/> corresponding to the client who send the game request
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
         private static User deserializationReceiveGameRequest(byte[] bytes)
         {
             int byte_compt = 0;
@@ -102,30 +154,53 @@ namespace MyClient.Functions
             return new User(user_id, userName);
         }
 
-        // General commands
+        // ---- General commands methods ----
+
+        /// <summary>
+        /// Send a command <see cref="NomCommande.PNG"/> to the userhandhler which handles the <paramref name="client"/> on the server side
+        /// </summary>
+        /// <param name="client"></param>
         public static void SendPing(Client client)
         {
             byte[] msg = serializationMessage(NomCommande.PNG);
             client.StreamWrite(msg);
         }
 
+        /// <summary>
+        /// Handle the reception of a command <see cref="NomCommande.PNG"/> from the userhandhler which handles the <paramref name="client"/> on the server side
+        /// </summary>
+        /// <param name="client"></param>
         public static void RecievePing(byte[] bytes, Client client)
         {
             //client.LogWriter.Write("ping recieved from the server");
         }
 
+        /// <summary>
+        /// Handle the reception of a message
+        /// </summary>
+        /// <param name="client"></param>
         public static void RecieveMessage(byte[] bytes, Client client)
         {
             string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
             client.LogWriter.Write("message recieved from the server: " + message);
         }
 
+        /// <summary>
+        /// Send the command to ask the server to send back the list of the others available users 
+        /// </summary>
+        /// <param name="client"></param>
         public static void AskOtherUsers(Client client)
         {
             byte[] msg = serializationMessage(NomCommande.OUS);
             client.StreamWrite(msg);
         }
 
+        /// <summary>
+        /// <para>Handle the reception of the list of the others available users</para>
+        /// <para>Store the list of the others available users send by the server</para>
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="client"></param>
         public static void RecieveOtherUsers(byte[] bytes, Client client)
         {
             int n_users = BitConverter.ToInt16(bytes, 0);
@@ -147,12 +222,22 @@ namespace MyClient.Functions
             client.ConnectedUsers = new Dictionary<int, User>(newConnectedUsers);
         }
 
+        /// <summary>
+        /// Send a message
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="message"></param>
         public static void SendMessage(Client client, string message)
         {
             byte[] msg = serializationMessage(message, NomCommande.MSG);
             client.StreamWrite(msg);
         }
 
+        /// <summary>
+        /// Send the new username to the server
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="userName"></param>
         public static void SendUserName(Client client, string userName)
         {
             Debug.Log("Sending new username: " + userName);
@@ -160,14 +245,25 @@ namespace MyClient.Functions
             client.StreamWrite(msg);
         }
 
-        // Game Requests commands
+        // ---- Game Requests commands methods ----
 
+        /// <summary>
+        /// Send a Match Request to the client with the <paramref name="id"/> as id
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="id"></param>
         public static void RequestMatch(Client client, int id)
         {
             byte[] msg = serializationMessage(BitConverter.GetBytes((Int16)id), NomCommande.MRQ);
             client.StreamWrite(msg);
         }
 
+        /// <summary>
+        /// <para>Handle the reception of the response to the <see cref="RequestMatch(Client, int)"/> send earlier</para>
+        /// <para>If the response is positive the sender is store as the current opponent</para>
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="client"></param>
         public static void RecieveGameRequestStatus(byte[] bytes, Client client)
         {
             Tuple<int, bool> tuple = deserializationResponseOpponent(bytes);
@@ -182,6 +278,11 @@ namespace MyClient.Functions
             client.RaiseMatchRequestUpdated(new MatchRequestEventArgs(user, status));
         }
 
+        /// <summary>
+        /// Handle the reception of a new game request
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="client"></param>
         public static void RecieveGameRequest(byte[] bytes, Client client)
         {
             int byte_compt = 0;
@@ -197,9 +298,15 @@ namespace MyClient.Functions
             client.RaiseMatchRequestUpdated(new MatchRequestEventArgs(user, MatchRequestEventArgs.EStatus.New));
         }
 
+        /// <summary>
+        /// Send the <paramref name="response"/> to the Game Request send by client with the id <paramref name="idOpponent"/>
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="idOpponent"></param>
+        /// <param name="response"></param>
         public static void SendGameRequestResponse(Client client, int idOpponent, bool response)
         {
-            AskOtherUsers(client); //probablement a supprimer maintenant que le dictionnaire ConnectedUsers est mis a jour lors de l'appel de la methode RecieveGameRequest
+            AskOtherUsers(client); 
 
             if (response)
             {
@@ -224,8 +331,13 @@ namespace MyClient.Functions
             }
         }
 
+        // ---- In-game commands methods ----
 
-        // In-game commands
+        /// <summary>
+        /// Send to the server the <paramref name="position"/> that the client want to play
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="position"></param>
         public static void SendPositionPlayer(Client client, System.Numerics.Vector3 position)
         {
             byte[] positionBytes = Serialization.SerializationPositionPlayed(position);
@@ -233,17 +345,31 @@ namespace MyClient.Functions
             client.StreamWrite(msg);
         }
 
+        /// <summary>
+        /// Ask the server to send back the game board
+        /// </summary>
+        /// <param name="client"></param>
         public static void AskGameBoard(Client client)
         {
             byte[] msg = serializationMessage(NomCommande.DGB);
             client.StreamWrite(msg);
         }
 
+        /// <summary>
+        /// Handle the reception of a Game Board from the server
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="client"></param>
         public static void RecieveGameBoard(byte[] bytes, Client client)
         {
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
         }
 
+        /// <summary>
+        /// Handle the disconnection of the opponent of <paramref name="client"/>
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="client"></param>
         public static void RecieveOpponentDisconnection(byte[] bytes, Client client)
         {
             Debug.Log("RaiseOpponentDisconnected");
