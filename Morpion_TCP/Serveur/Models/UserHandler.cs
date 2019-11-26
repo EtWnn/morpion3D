@@ -128,11 +128,11 @@ namespace Serveur.Models
                 {
                     KeepChatting = false;
                     
-                    Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
+                    Messaging.WriteLog(this, $"the user {this.UserName} Id {this.Id} got disconnected");
 
                     if(Game != null) //si le joueur était en jeu
                     {
-                        Messaging.SendNotifcationDisconnection(stream, this);
+                        Messaging.SendNotifcationDisconnection(Stream, this);
                         // à faire: prévenir l'autre joueur
                     	Game = null;
                     }

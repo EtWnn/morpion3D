@@ -91,15 +91,10 @@ namespace Serveur.Functions
             return new byte[0];
         }
 
-        public static byte[] RecievePing(byte[] bytes, UserHandler userHandler)
-        {
-            Messaging.WriteLog(userHandler, $"*** RecievePing: from user id {userHandler.Id}");
-            return new byte[0];
-        }
 
         public static byte[] RecievePing(byte[] bytes, UserHandler userHandler)
         {
-            Console.WriteLine($" >> ping recieved from client {userHandler.UserName} Id {userHandler.Id}");
+            Messaging.WriteLog(userHandler, $" >> ping recieved from user Id {userHandler.Id}");
             return new byte[0];
         }
 
@@ -278,9 +273,13 @@ namespace Serveur.Functions
             int idSender = userHandler.Id;
             int idRecipient = (userHandler.Id == userHandler.Game.IdPlayer1)? userHandler.Game.IdPlayer2 : userHandler.Game.IdPlayer1;
             byte[] msg_serialized=serializationMessage(new byte[0], NomCommande.NDC);
-            Messaging.WriteLog(userHandler.log_file, $"*** SendNotifcationDisconnection: try from {idSender} to {idRecipient}");
-            userHandler.UsersHandlers[idRecipient].stream.Write(msg_serialized, 0, msg_serialized.Length);
-            Messaging.WriteLog(userHandler.log_file, $"*** SendNotifcationDisconnection: success");
+            Messaging.WriteLog(userHandler, $"*** SendNotifcationDisconnection: try from {idSender} to {idRecipient}");
+
+            userHandler.UsersHandlers[idRecipient].StreamMutex.WaitOne();
+            userHandler.UsersHandlers[idRecipient].Stream.Write(msg_serialized, 0, msg_serialized.Length);
+            userHandler.UsersHandlers[idRecipient].StreamMutex.ReleaseMutex();
+
+            Messaging.WriteLog(userHandler, $"*** SendNotifcationDisconnection: success");
         }
         
         

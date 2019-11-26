@@ -76,10 +76,10 @@ namespace MyClient
                     this._socket.Connect(this._remoteEP);
                     if (this._socket.Connected)
                     {
+                        this._continueListen = true;
+
                         this.Stream = new NetworkStream(this._socket);
                         this.Stream.ReadTimeout = 10;
-
-                        this._continueListen = true;
 
                         //launching the listening thread
                         this._listeningThread = new Thread(() => this.Listen(this.Stream));
@@ -136,9 +136,7 @@ namespace MyClient
                     Debug.Log("try disconnect with ping method");
                     this._continueListen = false;
                     Debug.Log("this._socket.Connected : " + this._socket.Connected);
-                    this._socket.Disconnect(false);
-                    is_connected = false;
-                    Disconnected?.Invoke(this, EventArgs.Empty);
+                    tryDisconnect();
                 }
                 Thread.Sleep(100);
             }
@@ -146,7 +144,6 @@ namespace MyClient
 
         void Listen(NetworkStream stream)
         {
-            
             while (this._continueListen)
             {
 
