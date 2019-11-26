@@ -136,9 +136,9 @@ public class MainScript : MonoBehaviour
 
         // Subscribe event handlers relative to connection / disconnecction
         Client.Connected += uiControllerScript.OnlineStatusOverlay.OnConnected;
-        Client.Connected += (sender, e) => TryConnectCO.Pause();
+        Client.Connected += (sender, e) => { if (TryConnectCO.State != CoroutineState.Paused) TryConnectCO.Pause(); };
         Client.Disconnected += uiControllerScript.OnlineStatusOverlay.OnDisconnected;
-        Client.Disconnected += (sender, e) => TryConnectCO.Resume();
+        Client.Disconnected += (sender, e) => { if (TryConnectCO.State != CoroutineState.Paused) TryConnectCO.Resume(); };
 
         // Subscribe event handlers relative to updating opponent list
         uiControllerScript.OpponentsMenu.UpdatingOpponentList += Client.OnMatchUpdatingOpponentList;

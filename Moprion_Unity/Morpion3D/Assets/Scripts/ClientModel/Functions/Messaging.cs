@@ -155,6 +155,7 @@ namespace MyClient.Functions
 
         public static void SendUserName(Client client, string userName)
         {
+            Debug.Log("Sending new username: " + userName);
             byte[] msg = serializationMessage(userName, NomCommande.USN);
             client.StreamWrite(msg);
         }

@@ -97,6 +97,7 @@ namespace MyClient
             streamLock = new object();
         }
 
+        
         public void tryConnect()
         {
             if( this.socket == null || !this.socket.Connected)
@@ -149,6 +150,7 @@ namespace MyClient
         {
             if (this.socket != null && this.socket.Connected)
             {
+                Debug.Log("Disconnecting...");
                 this.continueListening = false;
                 this.socket.Close();
 
@@ -311,6 +313,7 @@ namespace MyClient
             tryDisconnect();
             Ip = IPAddress.Parse(e.IP);
             Port = int.Parse(e.Port);
+            Debug.Log($"New server address: {Ip}:{Port}");
             tryConnect();
         }
 
