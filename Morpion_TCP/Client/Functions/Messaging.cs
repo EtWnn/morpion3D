@@ -20,6 +20,8 @@ namespace MyClient.Functions
         DGB, // game board
         GRR, // request response
         RGR, // recieve game request
+        NDC, // notification opponent disconnected
+        PNG // Ping
 
     }
 
@@ -111,6 +113,13 @@ namespace MyClient.Functions
         }
 
         // General commands
+
+        public static void SendPing(NetworkStream stream)
+        {
+            byte[] msg = serializationMessage(NomCommande.PNG);
+            stream.Write(msg, 0, msg.Length);
+        }
+
         public static void RecieveMessage(byte[] bytes, MyClient client)
         {
             string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);

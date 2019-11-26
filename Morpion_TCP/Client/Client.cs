@@ -25,6 +25,7 @@ namespace MyClient
         private IPEndPoint _remoteEP = null;
         private bool _continueListen = false;
         private Thread _listeningThread = null;
+        private Thread _pingThread = null;
         public NetworkStream Stream = null;
 
 
@@ -66,12 +67,18 @@ namespace MyClient
                 this._socket.Connect(this._remoteEP);
                 if (this._socket.Connected)
                 {
+                    this._continueListen = true;
+
                     this.Stream = new NetworkStream(this._socket);
                     this.Stream.ReadTimeout = 10;
 
                     //launching the listening thread
                     this._listeningThread = new Thread(() => this.Listen(this.Stream));
                     this._listeningThread.Start();
+
+                    //launching the ping thread
+                    this._pingThread = new Thread(() => this.Ping(this.Stream));
+                    this._pingThread.Start();
                 }
             }
             
@@ -88,9 +95,25 @@ namespace MyClient
             }
         }
 
+        void Ping(NetworkStream stream)
+        {
+            while (this._continueListen)
+            {
+                try
+                {
+                    Messaging.SendPing(stream);
+                }
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                {
+                    this._continueListen = false;
+                    tryDisconnect();
+                }
+                Thread.Sleep(1000);
+            }
+        }
+
         void Listen(NetworkStream stream)
         {
-            this._continueListen = true;
             while (this._continueListen)
             {
 
