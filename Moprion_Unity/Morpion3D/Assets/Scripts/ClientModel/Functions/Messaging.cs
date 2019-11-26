@@ -111,7 +111,7 @@ namespace MyClient.Functions
         }
 
         /// <summary>
-        /// <para>Transform a <see cref="int"/> representing an id and a list of <see cref="bool"/> in a list of <see cref="byte"/></para>
+        /// <para>Transform a <see cref="int"/> representing an id and a <see cref="bool"/> in a list of <see cref="byte"/></para>
         /// <para>Can be deserialized by <see cref="deserializationResponseOpponent(byte[])"/></para>
         /// </summary>
         /// <param name="idOpponent"></param>
