@@ -77,9 +77,34 @@ namespace Serveur.Models
         public void Start()
         {
             Thread ctThread = new Thread(DoChat);
-            ctThread.Start();
-        }
+            Thread pingThread = new Thread(Ping);
 
+            ctThread.Start();
+            pingThread.Start();
+        }
+        private void Ping()
+        {
+            while (KeepChatting)
+            {
+                try
+                {
+                    Messaging.SendPing(this);
+                }
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                {
+                    StreamMutex.ReleaseMutex();
+                    Messaging.WriteLog(this, "try disconnect with ping method");
+                    KeepChatting = false;
+                    if (Game != null) //si le joueur était en jeu
+                    {
+                        Messaging.SendNotifcationDisconnection(this);
+                        Game = null;
+                    }
+                    ClientSocket.Close();
+                }
+                Thread.Sleep(1000);
+            }
+        }
         private void DoChat()
         {
             StreamMutex.WaitOne();

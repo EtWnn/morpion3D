@@ -126,6 +126,11 @@ namespace MyClient.Functions
             StreamWrite(client, msg);
         }
 
+        public static void RecievePing(byte[] bytes, Client client)
+        {
+            WriteLog(client, "ping recieved from the server:");
+        }
+
         public static void RecieveMessage(byte[] bytes, Client client)
         {
             string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
