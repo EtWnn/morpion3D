@@ -27,6 +27,22 @@ namespace Serveur.Functions
 
     public class Messaging
     {
+        public static int StreamRead(UserHandler userHandler, byte[] message)
+        {
+            userHandler.StreamMutex.WaitOne();
+            int n_bytes = userHandler.Stream.Read(message, 0, message.Length);
+            userHandler.StreamMutex.ReleaseMutex();
+
+            return n_bytes;
+        }
+
+        public static void StreamWrite(UserHandler userHandler, byte[] message)
+        {
+            userHandler.StreamMutex.WaitOne();
+            userHandler.Stream.Write(message, 0, message.Length);
+            userHandler.StreamMutex.ReleaseMutex();
+        }
+
         private static byte[] serializationMessage(byte[] message_bytes, NomCommande nomCommande)
         {
             var cmd = Encoding.UTF8.GetBytes(nomCommande.ToString());
@@ -143,16 +159,10 @@ namespace Serveur.Functions
                 Messaging.WriteLog(userHandler, $"*** ReceivePositionPlayed: success");
 
                 byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer1]);
-
-                userHandler.UsersHandlers[idPlayer1].StreamMutex.WaitOne();
-                userHandler.UsersHandlers[idPlayer1].Stream.Write(msg_board1, 0, msg_board1.Length);
-                userHandler.UsersHandlers[idPlayer1].StreamMutex.ReleaseMutex();
+                StreamWrite(userHandler.UsersHandlers[idPlayer1], msg_board1);
 
                 byte[] msg_board2 = SendGameBoard(new byte[0], userHandler.UsersHandlers[userHandler.Game.IdPlayer2]);
-
-                userHandler.UsersHandlers[idPlayer2].StreamMutex.WaitOne();
-                userHandler.UsersHandlers[idPlayer2].Stream.Write(msg_board2, 0, msg_board2.Length);
-                userHandler.UsersHandlers[idPlayer2].StreamMutex.ReleaseMutex();
+                StreamWrite(userHandler.UsersHandlers[idPlayer2], msg_board2);
 
                 if (!(userHandler.Game.Mode == GameMode.Player1 || userHandler.Game.Mode == GameMode.Player2))
                 {
@@ -189,10 +199,7 @@ namespace Serveur.Functions
             {
                 byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
                 byte[] request_msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
-
-                userHandler.UsersHandlers[idRecipient].StreamMutex.WaitOne();
-                userHandler.UsersHandlers[idRecipient].Stream.Write(request_msg, 0, request_msg.Length);
-                userHandler.UsersHandlers[idRecipient].StreamMutex.ReleaseMutex();
+                StreamWrite(userHandler.UsersHandlers[idRecipient], request_msg);
 
                 Messaging.WriteLog(userHandler, $"*** TransferMatchRequest: success");
             }
@@ -226,18 +233,12 @@ namespace Serveur.Functions
             //la réponse est envoyée au destinataire
             byte[] msg_bytes = serializationResponseOpponent(idSender, response);
             byte[] msg_to_dest = serializationMessage(msg_bytes, NomCommande.RGR);
-
-            userHandler.UsersHandlers[idRecipient].StreamMutex.WaitOne();
-            userHandler.UsersHandlers[idRecipient].Stream.Write(msg_to_dest, 0, msg_to_dest.Length);
-            userHandler.UsersHandlers[idRecipient].StreamMutex.ReleaseMutex();
+            StreamWrite(userHandler.UsersHandlers[idRecipient], msg_to_dest);
 
             //la réponse est confirmée à l'envoyeur
             msg_bytes = serializationResponseOpponent(idRecipient, response);
             byte[] msg_to_sender = serializationMessage(msg_bytes, NomCommande.RGR);
-
-            userHandler.StreamMutex.WaitOne();
-            userHandler.Stream.Write(msg_to_sender, 0, msg_to_sender.Length);
-            userHandler.StreamMutex.ReleaseMutex();
+            StreamWrite(userHandler, msg_to_sender);
 
             if (response) //creation de l'objet game
             {
@@ -251,17 +252,11 @@ namespace Serveur.Functions
 
                 //on envoie la board au destinataire
                 byte[] msg_board1 = SendGameBoard(new byte[0], userHandler.UsersHandlers[idRecipient]);
-
-                userHandler.UsersHandlers[idRecipient].StreamMutex.WaitOne();
-                userHandler.UsersHandlers[idRecipient].Stream.Write(msg_board1, 0, msg_board1.Length);
-                userHandler.UsersHandlers[idRecipient].StreamMutex.ReleaseMutex();
+                StreamWrite(userHandler.UsersHandlers[idRecipient], msg_board1);
 
                 //on envoie la board à l'envoyeur
                 byte[] msg_board2 = SendGameBoard(new byte[0], userHandler);
-
-                userHandler.StreamMutex.WaitOne();
-                userHandler.Stream.Write(msg_board2, 0, msg_board2.Length);
-                userHandler.StreamMutex.ReleaseMutex();
+                StreamWrite(userHandler, msg_board2);
             }
 
             return new byte[0];
@@ -282,10 +277,8 @@ namespace Serveur.Functions
             cmd.CopyTo(msg, 0);
             message_length.CopyTo(msg, cmd.Length);
             message_bytes.CopyTo(msg, cmd.Length + message_length.Length);
+            StreamWrite(userHandler, msg);
 
-            userHandler.StreamMutex.WaitOne();
-            userHandler.Stream.Write(msg, 0, msg.Length);
-            userHandler.StreamMutex.ReleaseMutex();
         }
 
         public static void WriteLog(string logFile, Mutex logMutex, string log)

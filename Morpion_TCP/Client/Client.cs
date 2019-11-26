@@ -29,7 +29,7 @@ namespace MyClient
         public NetworkStream Stream = null;
 
 
-        public Mutex mutex = new Mutex();
+        public Mutex UsersMutex = new Mutex();
         public Dictionary<int, User> connected_users = new Dictionary<int, User>();
 
 

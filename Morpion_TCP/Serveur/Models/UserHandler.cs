@@ -93,31 +93,25 @@ namespace Serveur.Models
                 try
                 {
                     Byte[] bytes = new Byte[5];
-                    StreamMutex.WaitOne();
-                    int NombreOctets = Stream.Read(bytes, 0, bytes.Length);
-                    StreamMutex.ReleaseMutex();
-                    if (NombreOctets >= 5) //minimum number of bytes for CMD + length to follow
+                    int n_bytes = Messaging.StreamRead(this, bytes);
+                    if (n_bytes >= 5) //minimum number of bytes for CMD + length to follow
                     {
                         
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
                         int following_length = BitConverter.ToInt16(bytes, 3);
 
-                        Messaging.WriteLog(this, $"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
+                        Messaging.WriteLog(this, $"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {n_bytes}");
                         byte[] following_bytes = new byte[following_length];
                         if(following_length > 0)
                         {
-                            StreamMutex.WaitOne();
-                            Stream.Read(following_bytes, 0, following_bytes.Length);
-                            StreamMutex.ReleaseMutex();
+                            Messaging.StreamRead(this, following_bytes);
                         }
 
                         byte[] response = UserHandler.methods[(NomCommande)Enum.Parse(typeof(NomCommande), cmd)](following_bytes, this);
 
                         if (response.Length > 0)
                         {
-                            StreamMutex.WaitOne();
-                            Stream.Write(response, 0, response.Length);
-                            StreamMutex.ReleaseMutex();
+                            Messaging.StreamWrite(this, response);
                         }
                     }
                     
