@@ -11,11 +11,40 @@ using Serveur.Functions;
 namespace Serveur.Models
 {
     /// <summary>
-    /// Handle one client per instance
+    /// Handle one client for the server
     /// </summary>
     public class UserHandler
     {
+
+        // ---- Static fields/properties ----
+
         private static Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>> methods = new Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>>();
+
+        // ---- Public fields/properties ----
+
+        public bool KeepChatting;
+        public int Id { get; private set; }
+        public string UserName { get; set; }
+
+        public ModelGame.Game Game { get; set; }
+
+        public LogWriter ServerLogWriter { get => Server.LogWriter; }
+        public Dictionary<int, UserHandler> UsersHandlers { get => Server.UsersHandlers; }
+
+        public bool Connected => ClientSocket.Connected;
+
+        // ---- Private fields/properties ----
+
+        private readonly Server Server;
+
+        private TcpClient ClientSocket { get; set; }
+        private NetworkStream Stream;
+        private readonly object streamLock = new object();
+
+        private const int pingDelay = 500;
+
+        // ---- Static methods ----
+
         public static void InnitMethods()
         {
             methods[NomCommande.MSG] = Messaging.RecieveMessage;
@@ -28,21 +57,7 @@ namespace Serveur.Models
             methods[NomCommande.PNG] = Messaging.RecievePing;
         }
 
-        public bool KeepChatting;
-        public int Id { get; private set; }
-        public string UserName { get; set; }
-
-        private TcpClient ClientSocket { get; set; }
-        private NetworkStream Stream;
-        private readonly object streamLock = new object();
-
-        public ModelGame.Game Game { get; set; }
-
-        private readonly Server Server;
-        public LogWriter ServerLogWriter { get => Server.LogWriter; }
-        public Dictionary<int, UserHandler> UsersHandlers { get => Server.UsersHandlers; }
-
-        public bool Connected => ClientSocket.Connected;
+        // ---- Public methods ----
 
         public UserHandler(TcpClient inClientSocket, int id, Server server)
         {
@@ -51,10 +66,14 @@ namespace Serveur.Models
             Id = id;
             Game = null;
             Server = server;
-                
+
             this.KeepChatting = true;
         }
 
+
+        /// <summary>
+        /// launch in threads the methods <see cref="DoChat"/> and <see cref="Ping"/> for the communication with the client
+        /// </summary>
         public void Start()
         {
             Thread ctThread = new Thread(DoChat);
@@ -63,8 +82,62 @@ namespace Serveur.Models
             ctThread.Start();
             pingThread.Start();
         }
+
+
+        /// <summary>
+        /// read thread-safely the client stream 
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns> the number of bytes read</returns>
+        public int StreamRead(byte[] message)
+        {
+            int n_bytes = 0;
+            lock (streamLock)
+            {
+                n_bytes = this.Stream.Read(message, 0, message.Length);
+            }
+            return n_bytes;
+        }
+
+        /// <summary>
+        /// write thread-safely on the client stream 
+        /// </summary>
+        /// <param name="message"></param>
+        public void StreamWrite(byte[] message)
+        {
+            lock (streamLock)
+            {
+                this.Stream.Write(message, 0, message.Length);
+            }
+        }
+
+
+        /// <summary>
+        /// serialize the <see cref="Id"/> and the <see cref="UserName"/> in a bytes array
+        /// </summary>
+        /// <returns></returns>
+        public byte[] ToBytes()
+        {
+            var id_bytes = BitConverter.GetBytes((Int16)this.Id);
+            var username_length_bytes = BitConverter.GetBytes((Int16)this.UserName.Length);
+            var username_bytes = Encoding.UTF8.GetBytes(this.UserName);
+
+            byte[] bytes = new byte[id_bytes.Length + username_length_bytes.Length + username_bytes.Length];
+            id_bytes.CopyTo(bytes, 0);
+            username_length_bytes.CopyTo(bytes, id_bytes.Length);
+            username_bytes.CopyTo(bytes, id_bytes.Length + username_length_bytes.Length);
+
+            return bytes;
+        }
+
+        // ---- Private methods ----
+
+        /// <summary>
+        /// Send a ping to the server every <see cref="pingDelay"/> seconds
+        /// </summary>
         private void Ping()
         {
+            Thread.Sleep(2000);
             while (KeepChatting)
             {
                 try
@@ -74,7 +147,7 @@ namespace Serveur.Models
                 catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
 
-                    ServerLogWriter.Write("try disconnect with ping method");
+                    ServerLogWriter.Write($"try disconnecting id {Id} with ping method");
                     KeepChatting = false;
                     if (Game != null) //si le joueur était en jeu
                     {
@@ -86,6 +159,11 @@ namespace Serveur.Models
                 Thread.Sleep(1000);
             }
         }
+
+
+        /// <summary>
+        /// recieve the commands from the client and answer accordingly
+        /// </summary>
         private void DoChat()
         {
             lock(streamLock)
@@ -128,12 +206,12 @@ namespace Serveur.Models
 
                     
                 }
-                catch (System.IO.IOException ex) //à faire: prendre en compte la fermeture inatendue du canal par le client
+                catch (System.IO.IOException) 
                 {
                     KeepChatting = false;
                     Server.LogWriter.Write($"the user {this.UserName} Id {this.Id} got disconnected");
 
-                    if(Game != null) //si le joueur était en jeu
+                    if(Game != null)
                     {
                         int IdPlayer1 = Game.IdPlayer1;
                         int IdPlayer2 = Game.IdPlayer2;
@@ -147,38 +225,6 @@ namespace Serveur.Models
                 }
             }
 
-        }
-
-        public int StreamRead(byte[] message)
-        {
-            int n_bytes = 0;
-            lock(streamLock)
-            {
-                n_bytes = this.Stream.Read(message, 0, message.Length);
-            }
-            return n_bytes;
-        }
-
-        public void StreamWrite(byte[] message)
-        {
-            lock(streamLock)
-            {
-                this.Stream.Write(message, 0, message.Length);
-            }
-        }
-
-        public byte[] ToBytes()
-        {
-            var id_bytes = BitConverter.GetBytes((Int16)this.Id);
-            var username_length_bytes = BitConverter.GetBytes((Int16)this.UserName.Length);
-            var username_bytes = Encoding.UTF8.GetBytes(this.UserName);
-
-            byte[] bytes = new byte[id_bytes.Length + username_length_bytes.Length + username_bytes.Length];
-            id_bytes.CopyTo(bytes, 0);
-            username_length_bytes.CopyTo(bytes, id_bytes.Length);
-            username_bytes.CopyTo(bytes, id_bytes.Length + username_length_bytes.Length);
-
-            return bytes;
         }
         
     }
