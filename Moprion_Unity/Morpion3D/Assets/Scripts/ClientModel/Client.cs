@@ -16,12 +16,14 @@ namespace MyClient
         public readonly string LogFile;
         public Int32 Port = 13000;
         public IPAddress Ip = IPAddress.Parse("127.0.0.1");
+        public int TryConnectPeriodMs = 100; 
 
         private Socket socket = null;
         private IPEndPoint remoteEP = null;
         private bool continueListening = false;
         private Thread listeningThread = null;
         private Thread pingThread = null;
+        private Thread tryConnectThread = null;
 
         private readonly object streamLock;
         public NetworkStream Stream = null;
@@ -98,6 +100,18 @@ namespace MyClient
             streamLock = new object();
         }
 
+        public void RepeatTryConnect()
+        {
+            tryConnectThread = new Thread(() =>
+            {
+                while(!is_connected)
+                {
+                    tryConnect();
+                    Thread.Sleep(TryConnectPeriodMs);
+                }
+            });
+            tryConnectThread.Start();
+        }
         
         public void tryConnect()
         {
@@ -128,9 +142,8 @@ namespace MyClient
                     	this.pingThread.Start();
 
                         is_connected = true;
-                        Debug.Log("Before Connected event");
                         Connected?.Invoke(this, EventArgs.Empty);
-                        Debug.Log("After Connected event");
+                        Debug.Log($"After connection {this.socket.Connected}");
                     }
                 }
                 catch (SocketException)
@@ -149,7 +162,7 @@ namespace MyClient
 
         public void tryDisconnect()
         {
-            if (this.socket != null && this.socket.Connected)
+            if (this.socket != null)
             {
                 Debug.Log("Disconnecting...");
                 this.continueListening = false;
@@ -170,9 +183,7 @@ namespace MyClient
                 }
                 catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
-                    Debug.Log("try disconnect with ping method");
                     this.continueListening = false;
-                    Debug.Log("this._socket.Connected : " + this.socket.Connected);
                     tryDisconnect();
                 }
                 Thread.Sleep(1000);
@@ -318,7 +329,7 @@ namespace MyClient
             Ip = IPAddress.Parse(e.IP);
             Port = int.Parse(e.Port);
             Debug.Log($"New server address: {Ip}:{Port}");
-            tryConnect();
+            RepeatTryConnect();
         }
 
         public void OnUsernameUpdate(object sender, UsernameEventArgs e)

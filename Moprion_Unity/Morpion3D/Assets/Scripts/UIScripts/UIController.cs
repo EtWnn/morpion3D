@@ -52,10 +52,16 @@ public class UIController : MonoBehaviour
         MatchRequestHandler = popupPanelGo.GetComponent<MatchRequestHandler>();
         TurnIndicator = transform.Find("Canvas/TurnIndicator").GetComponent<TurnIndicator>();
         GameCommandsOverlay = transform.Find("Canvas/GameCommandsOverlay").gameObject;
+
+        //// Hack set OptionMenu active so its awke script is run.
+        //OptionsMenu.SetActive(true);
     }
 
     private void Start()
     {
+        //// Hack end: desactivate option menu
+        //OptionsMenu.SetActive(true);
+
         StateChange += MainMenu.OnMenuStateChange;
         StateChange += OptionsMenu.OnMenuStateChange;
         StateChange += OpponentsMenu.OnMenuStateChange;

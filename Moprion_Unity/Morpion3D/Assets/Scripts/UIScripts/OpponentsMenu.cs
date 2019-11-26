@@ -58,8 +58,8 @@ public class OpponentsMenu : MonoBehaviour
 
     private GameObject ViewportContent;
     private ToggleGroup ToggleGroup;
-    private List<User> Opponents;
-    private bool update;
+    private SharedUpdatable<List<User>> Opponents;
+    private SharedUpdatable<bool> isClientConnected;
 
     ///// Public method /////
 
@@ -80,11 +80,10 @@ public class OpponentsMenu : MonoBehaviour
     /// </summary>
     /// <param name="sender">Not used.</param>
     /// <param name="e">Must contains the updated opponent list in its Users field.</param>
-    public void OnOpponentListUpdated(object sender, TEventArgs<List<User>> e)
-    {
-        Opponents = e.Data;
-        update = true;
-    }
+    public void OnOpponentListUpdated(object sender, TEventArgs<List<User>> e) => Opponents.Write(e.Data);
+
+    public void OnConnected(object sender, EventArgs e) => isClientConnected?.Write(true);
+    public void OnDisconnected(object sender, EventArgs e) => isClientConnected?.Write(false);
 
     public void SetActive(bool value)
     {
@@ -93,9 +92,6 @@ public class OpponentsMenu : MonoBehaviour
 
     ///// Private methods /////
 
-    // [Test Field] Used to simulate client
-    //OpponentListUpdater client;
-
     private void Awake()
     {
         RefreshButton = transform.Find("Refresh Button").GetComponent<Button>();
@@ -103,7 +99,13 @@ public class OpponentsMenu : MonoBehaviour
         SendRequestButton = transform.Find("Send Request Button").GetComponent<Button>();
         ViewportContent = transform.Find("Scroll View/Viewport/Content").gameObject;
         ToggleGroup = ViewportContent.GetComponent<ToggleGroup>();
-        Opponents = new List<User>();
+
+        Opponents = new SharedUpdatable<List<User>>();
+
+        isClientConnected = new SharedUpdatable<bool>();
+        isClientConnected.UpdateAction = (bool value) => RefreshButton.interactable = value;
+        isClientConnected.UpdateAction(GetComponentInParent<MainScript>().Client.is_connected);
+
 
         SelectedUser = null;
 
@@ -112,8 +114,6 @@ public class OpponentsMenu : MonoBehaviour
         SendRequestButton.onClick.AddListener(RaiseSendingMatchRequest);
 
         SendRequestButton.interactable = false;
-
-        update = true;
 
         /// Client simulation for testing
 
@@ -126,14 +126,10 @@ public class OpponentsMenu : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        if (update)
-        {
-            UpdateViewport();
-            update = false;
-        }
+        Opponents.TryProcessIfNew();
     }
 
-    private void UpdateViewport()
+    private void UpdateViewport(List<User> opponents)
     {
         var viewportContentTransform = ViewportContent.transform;
 
@@ -141,11 +137,11 @@ public class OpponentsMenu : MonoBehaviour
         Reinit();
 
         /// Re-populate viewport
-        foreach (var opponent in Opponents)
+        foreach (var opp in opponents)
         {
             var slot = Instantiate(OpponentSlot, viewportContentTransform);
             var script = slot.GetComponent<OpponentSlot>();
-            script.SetUser(opponent);
+            script.SetUser(opp);
             script.SetToggleGroup(ToggleGroup);
             script.OnToggled += OnOpponentSlotToggled;
         }

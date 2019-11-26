@@ -95,6 +95,11 @@ public class MainScript : MonoBehaviour
         GridPrefab = Instantiate(GridPrefab, transform);
         UIControllerPrefab = Instantiate(UIControllerPrefab, transform);
 
+        // Get scripts components
+        cameraScript = CameraHandlerPrefab.GetComponent<CameraScript>();
+        gridScript = GridPrefab.GetComponent<GridScript>();
+        uiControllerScript = UIControllerPrefab.GetComponent<UIController>();
+
         // Initializing client
         Client.InnitMethods();
         Client = new Client();
@@ -103,11 +108,6 @@ public class MainScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // Get scripts components
-        cameraScript = CameraHandlerPrefab.GetComponent<CameraScript>();
-        gridScript = GridPrefab.GetComponent<GridScript>();
-        uiControllerScript = UIControllerPrefab.GetComponent<UIController>();
-
         gameReadyEventsState = new Dictionary<object, bool>();
         gameReadyEventsState.Add(cameraScript, false);
         gameReadyEventsState.Add(gridScript, false);
@@ -134,11 +134,14 @@ public class MainScript : MonoBehaviour
         uiControllerScript.OptionsMenu.ServerInfoEntered += Client.OnServerInfoUpdated;
         uiControllerScript.OptionsMenu.UsernameEntered += Client.OnUsernameUpdate;
 
-        // Subscribe event handlers relative to connection / disconnecction
+        // Subscribe event handlers relative to connection / disconnection
         Client.Connected += uiControllerScript.OnlineStatusOverlay.OnConnected;
-        Client.Connected += (sender, e) => { if (TryConnectCO.State != CoroutineState.Paused) TryConnectCO.Pause(); };
+        Client.Connected += uiControllerScript.OptionsMenu.OnConnected;
+        Client.Connected += uiControllerScript.OpponentsMenu.OnConnected;
         Client.Disconnected += uiControllerScript.OnlineStatusOverlay.OnDisconnected;
-        Client.Disconnected += (sender, e) => { if (TryConnectCO.State != CoroutineState.Paused) TryConnectCO.Resume(); };
+        Client.Disconnected += uiControllerScript.OptionsMenu.OnDisconnected;
+        Client.Disconnected += uiControllerScript.OpponentsMenu.OnDisconnected;
+        Client.Disconnected += (sender, e) => { Client.RepeatTryConnect(); };
 
         // Subscribe event handlers relative to updating opponent list
         uiControllerScript.OpponentsMenu.UpdatingOpponentList += Client.OnMatchUpdatingOpponentList;
@@ -159,7 +162,7 @@ public class MainScript : MonoBehaviour
 
 		Client.Port = 13000;
         Client.Ip = System.Net.IPAddress.Parse("127.0.0.1");
-        TryConnectCO = this.StartCoroutineEx(IERepeatTryConnect(1f));
+        Client.RepeatTryConnect();
     }
 
     /// <summary>
@@ -180,21 +183,9 @@ public class MainScript : MonoBehaviour
         }
     }
 
-    IEnumerator IERepeatTryConnect(float period)
-    {
-        yield return null; // Needed in case client connect on first try to prevent Error when trying to pause coroutine afterward
-        while (true)
-        {
-            Debug.Log("Client: " + Client);
-            Client.tryConnect();
-            yield return new WaitForSeconds(period);
-            Debug.Log("Client: " + Client);
-        }
-    }
-
     private void OnApplicationQuit()
     {
-        
+        Client = null;
     }
 }
 

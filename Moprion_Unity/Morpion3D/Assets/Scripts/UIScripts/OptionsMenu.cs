@@ -47,6 +47,8 @@ public class OptionsMenu : MonoBehaviour
         private set { _playerPattern = value; PlayerPatternChanged?.Invoke(this, new TEventArgs<EPlayerPatterns>(value)); }
     }
 
+    private SharedUpdatable<bool> isClientConnected;
+
     public void SetActive(bool value)
     {
         gameObject.SetActive(value);
@@ -61,6 +63,9 @@ public class OptionsMenu : MonoBehaviour
             SetActive(false);
     }
 
+    public void OnConnected(object sender, EventArgs e) => isClientConnected?.Write(true);
+    public void OnDisconnected(object sender, EventArgs e) => isClientConnected?.Write(false);
+
     private void Awake()
     {
         BackButton = transform.Find("Back Button").GetComponent<Button>();
@@ -69,12 +74,17 @@ public class OptionsMenu : MonoBehaviour
         UsernameField = transform.Find("Username/InputField (TMP)").GetComponent<TMP_InputField>();
         ServerIPField = transform.Find("ServerIP/InputField (TMP)").GetComponent<TMP_InputField>();
         ServerPortField = transform.Find("ServerPort/InputField (TMP)").GetComponent<TMP_InputField>();
+
+        Debug.Log($"(Awake)UsernameField: {UsernameField}");
+
+        UsernameField.interactable = false;
     }
 
     // Start is called before the first frame update
     void Start()
     {
         var mainScript = GetComponentInParent<MainScript>();
+
         ServerIPField.text = mainScript.Client.Ip.ToString();
         ServerPortField.text = mainScript.Client.Port.ToString();
 
@@ -84,11 +94,25 @@ public class OptionsMenu : MonoBehaviour
 
         BackButton.onClick.AddListener(() => Exiting?.Invoke(this, EventArgs.Empty));
         ValidateButton.onClick.AddListener(() => 
-        { 
-            ServerInfoEntered?.Invoke(this, new ServerInfoEventArgs(ServerIPField.text, ServerPortField.text));
-            UsernameEntered?.Invoke(this, new UsernameEventArgs(UsernameField.text));
+        {
+            Debug.Log(mainScript.Client.Ip.ToString() + " " + mainScript.Client.Port.ToString());
+            if(mainScript.Client.Ip.ToString() != ServerIPField.text
+            || mainScript.Client.Port.ToString() != ServerPortField.text)
+                ServerInfoEntered?.Invoke(this, new ServerInfoEventArgs(ServerIPField.text, ServerPortField.text));
+            
+            if(mainScript.Client.is_connected && UsernameField.text != "")
+                UsernameEntered?.Invoke(this, new UsernameEventArgs(UsernameField.text));
         });
         SetupSelectPatternTogglesOnStart();
+
+        isClientConnected = new SharedUpdatable<bool>();
+        isClientConnected.UpdateAction = (bool value) => UsernameField.interactable = value;
+        isClientConnected.UpdateAction(mainScript.Client.is_connected);
+    }
+
+    private void Update()
+    {
+        isClientConnected.TryProcessIfNew();
     }
 
     char OnValidateUsernameInput(string text, int charIndex, char addedChar)
