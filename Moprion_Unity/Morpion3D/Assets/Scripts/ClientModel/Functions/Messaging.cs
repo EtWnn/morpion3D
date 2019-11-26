@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Numerics;
 using MyClient.ModelGame;
 using MyClient.Models;
+using UnityEngine;
 
 namespace MyClient.Functions
 {
@@ -220,7 +221,7 @@ namespace MyClient.Functions
 
 
         // In-game commands
-        public static void SendPositionPlayer(NetworkStream stream, Vector3 position)
+        public static void SendPositionPlayer(NetworkStream stream, System.Numerics.Vector3 position)
         {
             byte[] positionBytes = Serialization.SerializationPositionPlayed(position);
             byte[] msg = serializationMessage(positionBytes, NomCommande.NPP);
@@ -240,6 +241,7 @@ namespace MyClient.Functions
 
         public static void RecieveOpponentDisconnection(byte[] bytes, Client client)
         {
+            Debug.Log("RaiseOpponentDisconnected");
             client.RaiseOpponentDisconnected();
         }
     }

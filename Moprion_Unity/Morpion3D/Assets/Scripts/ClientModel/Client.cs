@@ -78,6 +78,8 @@ namespace MyClient
                         this.Stream = new NetworkStream(this._socket);
                         this.Stream.ReadTimeout = 10;
 
+                        this._continueListen = true;
+
                         //launching the listening thread
                         this._listeningThread = new Thread(() => this.Listen(this.Stream));
                         this._listeningThread.IsBackground = true;
@@ -143,7 +145,7 @@ namespace MyClient
 
         void Listen(NetworkStream stream)
         {
-            this._continueListen = true;
+            
             while (this._continueListen)
             {
 
@@ -198,7 +200,7 @@ namespace MyClient
         
         internal void RaiseOpponentDisconnected()
         {
-            this.GameClient = null;
+            //this.GameClient = null;
             OpponentDisconnected?.Invoke(this, EventArgs.Empty);
         }
 
