@@ -35,7 +35,7 @@ public class GridScript : MonoBehaviour
     private SharedUpdatable<Game> gameState;
     private CubeletScript[,,] cubelets;
     private Action updateFunction;
-    
+
     private GameObject player1FillingObject;
     private GameObject player1WonFillingObject;
     private GameObject player2FillingObject;
@@ -55,10 +55,15 @@ public class GridScript : MonoBehaviour
         IsTurn,
         NotIsTurn,
         Won,
-        Lose
+        Lose,
+        Alone
     }
     ////// Events Handlers //////
 
+    public void OnOpponentDisconnected(object sender, EventArgs e)
+    {
+        SetPlayerTurn(PlayerEstate.Alone);
+    }
 
     public void OnStateChange(object sender, EventArgs e)
     {
@@ -146,7 +151,7 @@ public class GridScript : MonoBehaviour
     private void InGameBehaviour()
     {
         if (Input.GetKeyDown(KeyCode.Space))
-            SetExternCubeletsActive(!cubelets[0,0,0].gameObject.activeInHierarchy);
+            SetExternCubeletsActive(!cubelets[0, 0, 0].gameObject.activeInHierarchy);
         gameState.TryProcessIfNew();
     }
 
@@ -211,7 +216,7 @@ public class GridScript : MonoBehaviour
     private void UpdateGameState(Game gameState)
     {
         Debug.Log("In: UpdateGameState()");
-        if(firstUpdate)
+        if (firstUpdate)
         {
             isPlayer1 = gameState.IdPlayer1 != mainScript.Client.Opponent.Id;
             player1FillingObject = isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
@@ -227,7 +232,7 @@ public class GridScript : MonoBehaviour
         for (var x = 0; x < 3; x++)
             for (var y = 0; y < 3; y++)
                 for (var z = 0; z < 3; z++)
-                    switch (gameState.GameBoardMatrix[x,y,z])
+                    switch (gameState.GameBoardMatrix[x, y, z])
                     {
                         case (int)Cell.Player1Pattern:
                             cubelets[x, y, z].FillWith(player1FillingObject);
@@ -251,7 +256,7 @@ public class GridScript : MonoBehaviour
         switch (gameState.Mode)
         {
             case GameMode.Player1:
-                SetPlayerTurn(isPlayer1? PlayerEstate.IsTurn : PlayerEstate.NotIsTurn);
+                SetPlayerTurn(isPlayer1 ? PlayerEstate.IsTurn : PlayerEstate.NotIsTurn);
                 break;
             case GameMode.Player2:
                 SetPlayerTurn(!isPlayer1 ? PlayerEstate.IsTurn : PlayerEstate.NotIsTurn);
@@ -268,12 +273,14 @@ public class GridScript : MonoBehaviour
                 break;
         }
 
-        Debug.Log("Game mode changed!");
+                Debug.Log("Game mode changed!");
 
-    }
+        }
 
     private void SetPlayerTurn(PlayerEstate playerEstate)
     {
         PlayerTurn?.Invoke(this, new TEventArgs<PlayerEstate>(playerEstate));
     }
+
 }
+

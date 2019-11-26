@@ -21,6 +21,7 @@ namespace MyClient
         private IPEndPoint _remoteEP = null;
         private bool _continueListen = false;
         private Thread _listeningThread = null;
+        private Thread _pingThread = null;
         public NetworkStream Stream = null;
 
         public event EventHandler Connected;
@@ -28,6 +29,7 @@ namespace MyClient
         public event EventHandler GameUpdated;
         public event EventHandler<MatchRequestEventArgs> MatchRequestUpdated;
         public event EventHandler<TEventArgs<List<User>>> OpponentListUpdated;
+        public event EventHandler OpponentDisconnected;
 
 
         public bool is_connected = false;
@@ -58,15 +60,7 @@ namespace MyClient
             methods[NomCommande.RGR] = Messaging.RecieveGameRequestStatus;
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
-            methods[NomCommande.MSG] = Messaging.RecieveMessage;
-        }
-
-        public Client()
-        {
-            string to_date_string = DateTime.Now.ToString("s");
-            log_file = "client_log_" + to_date_string + ".txt";
-            log_file = log_file.Replace(':', '_');
-            Console.WriteLine($" log_file : {log_file}");
+            methods[NomCommande.NDC] = Messaging.RecieveOpponentDisconnection;
         }
 
         public void tryConnect()
@@ -82,6 +76,8 @@ namespace MyClient
                     this._socket.Connect(this._remoteEP);
                     if (this._socket.Connected)
                     {
+                        this._continueListen = true;
+
                         this.Stream = new NetworkStream(this._socket);
                         this.Stream.ReadTimeout = 10;
 
@@ -89,6 +85,11 @@ namespace MyClient
                         this._listeningThread = new Thread(() => this.Listen(this.Stream));
                         this._listeningThread.IsBackground = true;
                         this._listeningThread.Start();
+
+                        //launching the ping thread
+                    	this._pingThread = new Thread(() => this.Ping(this.Stream));
+                    	this._pingThread.IsBackground = true;
+                    	this._pingThread.Start();
 
                         is_connected = true;
                         Debug.Log("Before Connected event");
@@ -122,9 +123,27 @@ namespace MyClient
             }
         }
 
+        void Ping(NetworkStream stream)
+        {
+            while (this._continueListen)
+            {
+                try
+                {
+                    Messaging.SendPing(stream);
+                }
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                {
+                    Debug.Log("try disconnect with ping method");
+                    this._continueListen = false;
+                    Debug.Log("this._socket.Connected : " + this._socket.Connected);
+                    tryDisconnect();
+                }
+                Thread.Sleep(100);
+            }
+        }           
+
         void Listen(NetworkStream stream)
         {
-            this._continueListen = true;
             while (this._continueListen)
             {
 
@@ -153,33 +172,34 @@ namespace MyClient
                             stream.Read(following_bytes, 0, following_bytes.Length);
                         }
                         
-                        try
-                        {
-                            NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-                            Debug.Log(cmd_type);
-                            Messaging.WriteLog(log_file, $"command recieved: {cmd}, following_length: {following_length}");
-                            Client.methods[cmd_type](following_bytes, this);
+                        string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
+                        NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
 
-                        }
-                        catch (Exception ex)
+                        if (cmd_type == NomCommande.MSG)
                         {
-                            //write_in_log
-                            Messaging.WriteLog(log_file, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
-                            stream.Flush();
+                            //Messaging.RecieveMessage(following_bytes);
+                        }
+                        {
+                            Client.methods[cmd_type](following_bytes, this);
+                            Debug.Log(cmd_type);
                         }
                     }
 
 
 
                 }
-                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
                     this._continueListen = false;
-                    Messaging.WriteLog(log_file, $"ERROR: Listen crashed:  {ex}");
                 }
             }
         }
         
+        internal void RaiseOpponentDisconnected()
+        {
+            //this.GameClient = null;
+            OpponentDisconnected?.Invoke(this, EventArgs.Empty);
+        }
 
         internal void RaiseMatchRequestUpdated(MatchRequestEventArgs matchRequestEventArgs)
         {

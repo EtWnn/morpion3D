@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Numerics;
 using MyClient.ModelGame;
 using MyClient.Models;
+using UnityEngine;
 
 namespace MyClient.Functions
 {
@@ -19,7 +20,9 @@ namespace MyClient.Functions
         NPP, //New position played 
         DGB, // game board
         GRR, // request response
-        RGR // recieve game request
+        RGR, // recieve game request
+        NDC, // notification opponent disconnected
+        PNG // Ping
         //RQS, //
 
     }
@@ -117,12 +120,11 @@ namespace MyClient.Functions
         }
 
         // General commands
-        public static void RecieveMessage(byte[] bytes, Client client)
+        public static void SendPing(NetworkStream stream)
         {
-            string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-            WriteLog(client.log_file, "message recieved from the server: " + message);
+            byte[] msg = serializationMessage(NomCommande.PNG);
+            stream.Write(msg, 0, msg.Length);
         }
-
         public static void AskOtherUsers(NetworkStream stream)
         {
             byte[] msg = serializationMessage(NomCommande.OUS);
@@ -219,7 +221,7 @@ namespace MyClient.Functions
 
 
         // In-game commands
-        public static void SendPositionPlayer(NetworkStream stream, Vector3 position)
+        public static void SendPositionPlayer(NetworkStream stream, System.Numerics.Vector3 position)
         {
             byte[] positionBytes = Serialization.SerializationPositionPlayed(position);
             byte[] msg = serializationMessage(positionBytes, NomCommande.NPP);
@@ -237,15 +239,10 @@ namespace MyClient.Functions
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
         }
 
-        public static void WriteLog(string log_file, string log)
+        public static void RecieveOpponentDisconnection(byte[] bytes, Client client)
         {
-            DateTime localDate = DateTime.Now;
-            string log_date = localDate.ToString("s");
-            using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(log_file, true))
-            {
-                file.WriteLine(log_date + " " + log);
-            }
+            Debug.Log("RaiseOpponentDisconnected");
+            client.RaiseOpponentDisconnected();
         }
     }
 }

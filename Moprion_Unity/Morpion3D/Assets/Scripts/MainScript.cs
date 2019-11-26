@@ -100,6 +100,8 @@ public class MainScript : MonoBehaviour
         Client.GameUpdated += gridScript.OnGameUpdated;
         gridScript.PositionPlayed += Client.OnPositionPlayed;
 
+        Client.OpponentDisconnected += gridScript.OnOpponentDisconnected;
+
         State = EState.InMainMenu;
 
         Client.port = 13000;
