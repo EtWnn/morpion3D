@@ -75,8 +75,8 @@ public class OptionsMenu : MonoBehaviour
     void Start()
     {
         var mainScript = GetComponentInParent<MainScript>();
-        ServerIPField.text = mainScript.Client.localAddr.ToString();
-        ServerPortField.text = mainScript.Client.port.ToString();
+        ServerIPField.text = mainScript.Client.Ip.ToString();
+        ServerPortField.text = mainScript.Client.Port.ToString();
 
         UsernameField.onValidateInput += OnValidateUsernameInput;
         ServerIPField.onValidateInput += OnValidateServerIpInput;

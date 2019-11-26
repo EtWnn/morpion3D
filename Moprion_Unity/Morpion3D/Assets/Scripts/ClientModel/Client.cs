@@ -13,18 +13,18 @@ namespace MyClient
 {
     public class Client
     {
-        public Mutex LogMutex = new Mutex();
         public readonly string LogFile;
-        public Int32 port = 13000;
-        public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+        public Int32 Port = 13000;
+        public IPAddress Ip = IPAddress.Parse("127.0.0.1");
 
-        private Socket _socket = null;
-        private IPEndPoint _remoteEP = null;
-        private bool _continueListen = false;
-        private Thread _listeningThread = null;
-        private Thread _pingThread = null;
+        private Socket socket = null;
+        private IPEndPoint remoteEP = null;
+        private bool continueListening = false;
+        private Thread listeningThread = null;
+        private Thread pingThread = null;
+
+        private readonly object streamLock;
         public NetworkStream Stream = null;
-        public Mutex StreamMutex = new Mutex();
 
         public event EventHandler Connected;
         public event EventHandler Disconnected;
@@ -37,9 +37,28 @@ namespace MyClient
         public bool is_connected = false;
 
 
-        public Mutex mutex = new Mutex();
-        public Dictionary<int, User> connected_users = new Dictionary<int, User>();
+        private readonly object usersLock = new object();
+        private Dictionary<int, User> connectedUsers = new Dictionary<int, User>();
+        public Dictionary<int, User> ConnectedUsers
+        {
+            set
+            {
+                lock (usersLock)
+                {
+                    connectedUsers = value;
+                }
+            }
+            get
+            {
+                Dictionary<int, User> connectedUsers_copy;
+                lock (usersLock)
+                {
+                    connectedUsers_copy = new Dictionary<int, User>(connectedUsers);
+                }
+                return connectedUsers_copy;
 
+            }
+        }
 
         public Dictionary<int, User> gameRequestsRecieved = new Dictionary<int, User>();
         public User Opponent = null;
@@ -55,6 +74,8 @@ namespace MyClient
             }
         }
 
+        public readonly LogWriter LogWriter;
+
         private static Dictionary<NomCommande, Action<byte[], Client>> methods = new Dictionary<NomCommande, Action<byte[], Client>>();
         public static void InnitMethods()
         {
@@ -63,6 +84,7 @@ namespace MyClient
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
             methods[NomCommande.NDC] = Messaging.RecieveOpponentDisconnection;
+            methods[NomCommande.NDC] = Messaging.RecievePing;
         }
 
         public Client()
@@ -70,35 +92,38 @@ namespace MyClient
             string to_date_string = DateTime.Now.ToString("s");
             LogFile = "client_log_" + to_date_string + ".txt";
             LogFile = LogFile.Replace(':', '_');
+
+            LogWriter = new LogWriter(LogFile);
+            streamLock = new object();
         }
 
         public void tryConnect()
         {
-            if( this._socket == null || !this._socket.Connected)
+            if( this.socket == null || !this.socket.Connected)
             {
-                this._remoteEP = new IPEndPoint(this.localAddr, this.port);
-                this._socket = new Socket(this.localAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                this.remoteEP = new IPEndPoint(this.Ip, this.Port);
+                this.socket = new Socket(this.Ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
                 try
                 {
                     //connection to the server
-                    this._socket.Connect(this._remoteEP);
-                    if (this._socket.Connected)
+                    this.socket.Connect(this.remoteEP);
+                    if (this.socket.Connected)
                     {
-                        this._continueListen = true;
+                        this.continueListening = true;
 
-                        this.Stream = new NetworkStream(this._socket);
+                        this.Stream = new NetworkStream(this.socket);
                         this.Stream.ReadTimeout = 10;
 
                         //launching the listening thread
-                        this._listeningThread = new Thread(Listen);
-                        this._listeningThread.IsBackground = true;
-                        this._listeningThread.Start();
+                        this.listeningThread = new Thread(Listen);
+                        this.listeningThread.IsBackground = true;
+                        this.listeningThread.Start();
 
                         //launching the ping thread
-                    	this._pingThread = new Thread(Ping);
-                    	this._pingThread.IsBackground = true;
-                    	this._pingThread.Start();
+                    	this.pingThread = new Thread(Ping);
+                    	this.pingThread.IsBackground = true;
+                    	this.pingThread.Start();
 
                         is_connected = true;
                         Debug.Log("Before Connected event");
@@ -114,18 +139,18 @@ namespace MyClient
 
         ~Client()
         {
-            if (this._socket == null || !this._socket.Connected)
+            if (this.socket == null || !this.socket.Connected)
             {
-                this._socket.Close();
+                this.socket.Close();
             }
         }
 
         public void tryDisconnect()
         {
-            if (this._socket != null && this._socket.Connected)
+            if (this.socket != null && this.socket.Connected)
             {
-                this._continueListen = false;
-                this._socket.Close();
+                this.continueListening = false;
+                this.socket.Close();
 
                 is_connected = false;
                 Disconnected?.Invoke(this, EventArgs.Empty);
@@ -134,7 +159,7 @@ namespace MyClient
 
         void Ping()
         {
-            while (this._continueListen)
+            while (this.continueListening)
             {
                 try
                 {
@@ -142,10 +167,9 @@ namespace MyClient
                 }
                 catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
-                    this.StreamMutex.ReleaseMutex();
                     Debug.Log("try disconnect with ping method");
-                    this._continueListen = false;
-                    Debug.Log("this._socket.Connected : " + this._socket.Connected);
+                    this.continueListening = false;
+                    Debug.Log("this._socket.Connected : " + this.socket.Connected);
                     tryDisconnect();
                 }
                 Thread.Sleep(1000);
@@ -154,7 +178,7 @@ namespace MyClient
 
         void Listen()
         {
-            while (this._continueListen)
+            while (this.continueListening)
             {
 
                 try
@@ -163,12 +187,11 @@ namespace MyClient
                     int n_bytes = 0;
                     try
                     {
-                        n_bytes = Messaging.StreamRead(this, bytes);
+                        n_bytes = StreamRead(bytes);
                     }
                     catch (IOException)
                     {
                         n_bytes = 0;
-                        this.StreamMutex.ReleaseMutex();
                     }
                     
                     if (n_bytes >= 5) //minimum number of bytes for CMD + length to follow
@@ -180,35 +203,53 @@ namespace MyClient
                         byte[] following_bytes = new byte[following_length];
                         if (following_length > 0)
                         {
-                            Messaging.StreamRead(this, following_bytes);
+                            StreamRead(following_bytes);
                         }
 
                         try
                         {
                             NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-                            Messaging.WriteLog(this, $"command recieved: {cmd}, following_length: {following_length}");
+                            LogWriter.Write($"command recieved: {cmd}, following_length: {following_length}");
                             Client.methods[cmd_type](following_bytes, this);
 
                         }
                         catch (Exception ex)
                         {
                             //write_in_log
-                            Messaging.WriteLog(this, $"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
+                            LogWriter.Write($"CMD ERROR, CMD: {cmd}, following_length: {following_length}, EX:{ex}");
                             this.Stream.Flush();
                         }
                     }
 
-                    Thread.Sleep(100);
+                    Thread.Sleep(10);
 
                 }
                 catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
-                    this._continueListen = false;
-                    Messaging.WriteLog(this, $"ERROR: Listen crashed:  {ex}");
+                    this.continueListening = false;
+                    LogWriter.Write($"ERROR: Listen crashed:  {ex}");
                 }
             }
         }
-        
+
+        public int StreamRead(byte[] message)
+        {
+            int n_bytes = 0;
+            lock (streamLock)
+            {
+                n_bytes = this.Stream.Read(message, 0, message.Length);
+            }
+            return n_bytes;
+        }
+
+        public void StreamWrite(byte[] message)
+        {
+            lock (streamLock)
+            {
+                this.Stream.Write(message, 0, message.Length);
+            }
+        }
+
         internal void RaiseOpponentDisconnected()
         {
             //this.GameClient = null;
@@ -268,8 +309,8 @@ namespace MyClient
         public void OnServerInfoUpdated(object sender, ServerInfoEventArgs e)
         {
             tryDisconnect();
-            localAddr = IPAddress.Parse(e.IP);
-            port = int.Parse(e.Port);
+            Ip = IPAddress.Parse(e.IP);
+            Port = int.Parse(e.Port);
             tryConnect();
         }
 

@@ -157,9 +157,8 @@ public class MainScript : MonoBehaviour
 
         State = EState.InMainMenu;
 
-        // Default IP:port of the server
-        Client.port = 13000;
-        Client.localAddr = System.Net.IPAddress.Parse("127.0.0.1");
+		Client.Port = 13000;
+        Client.Ip = System.Net.IPAddress.Parse("127.0.0.1");
         TryConnectCO = this.StartCoroutineEx(IERepeatTryConnect(1f));
     }
 
