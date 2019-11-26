@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Serveur.Models
 {
+    /// <summary>
+    /// Write safely into its assigned file
+    /// </summary>
     public class LogWriter
     {
         public readonly string LogFile;

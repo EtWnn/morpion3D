@@ -10,6 +10,9 @@ using Serveur.Functions;
 
 namespace Serveur.Models
 {
+    /// <summary>
+    /// Handle one client per instance
+    /// </summary>
     public class UserHandler
     {
         private static Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>> methods = new Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>>();
@@ -104,7 +107,10 @@ namespace Serveur.Models
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
                         int following_length = BitConverter.ToInt16(bytes, 3);
 
-                        Server.LogWriter.Write($"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {n_bytes}");
+                        if(cmd != "PNG")
+                        {
+                            Server.LogWriter.Write($"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {n_bytes}");
+                        }
                         byte[] following_bytes = new byte[following_length];
                         if(following_length > 0)
                         {

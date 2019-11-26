@@ -69,6 +69,7 @@ namespace MyClient
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
             methods[NomCommande.MSG] = Messaging.RecieveMessage;
+            methods[NomCommande.PNG] = Messaging.RecievePing;
         }
 
         public MyClient()
@@ -166,13 +167,18 @@ namespace MyClient
                         {
                             StreamRead(following_bytes);
                         }
-                        Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {n_bytes}");
-
-                        string packet_string = System.Text.Encoding.UTF8.GetString(following_bytes, 0, following_bytes.Length);
+                        if(cmd != "PNG")
+                        {
+                            Console.WriteLine($" >> command recieved from the serveur : {cmd} de taille {following_length} {n_bytes}");
+                        }
+                        
                         try
                         {
                             NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-                            LogWriter.Write($"command recieved: {cmd}, following_length: {following_length}");
+                            if(cmd != "PNG")
+                            {
+                                LogWriter.Write($"command recieved: {cmd}, following_length: {following_length}");
+                            }
                             MyClient.methods[cmd_type](following_bytes, this);
                             
                         }

@@ -84,7 +84,7 @@ namespace MyClient
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
             methods[NomCommande.NDC] = Messaging.RecieveOpponentDisconnection;
-            methods[NomCommande.NDC] = Messaging.RecievePing;
+            methods[NomCommande.PNG] = Messaging.RecievePing;
         }
 
         public Client()
@@ -209,7 +209,10 @@ namespace MyClient
                         try
                         {
                             NomCommande cmd_type = (NomCommande)Enum.Parse(typeof(NomCommande), cmd);
-                            LogWriter.Write($"command recieved: {cmd}, following_length: {following_length}");
+                            if(cmd != "PNG")
+                            {
+                                LogWriter.Write($"command recieved: {cmd}, following_length: {following_length}");
+                            }
                             Client.methods[cmd_type](following_bytes, this);
 
                         }

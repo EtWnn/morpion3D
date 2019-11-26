@@ -96,7 +96,7 @@ namespace Serveur.Functions
 
         public static byte[] RecievePing(byte[] bytes, UserHandler userHandler)
         {
-            userHandler.ServerLogWriter.Write($" >> ping recieved from user Id {userHandler.Id}");
+            //userHandler.ServerLogWriter.Write($" >> ping recieved from user Id {userHandler.Id}");
             return new byte[0];
         }
 

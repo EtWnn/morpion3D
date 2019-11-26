@@ -98,6 +98,12 @@ namespace MyClient.Functions
 
         // General commands
 
+        public static void RecievePing(byte[] bytes, MyClient client)
+        {
+            //client.LogWriter.Write("ping recieved from the server");
+        }
+
+
         public static void SendPing(MyClient client)
         {
             byte[] msg = serializationMessage(NomCommande.PNG);
