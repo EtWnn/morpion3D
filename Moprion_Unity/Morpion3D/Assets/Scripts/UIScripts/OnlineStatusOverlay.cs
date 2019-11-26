@@ -49,12 +49,12 @@ public class OnlineStatusOverlay : MonoBehaviour
     
     public void OnConnected(object sender, EventArgs e)
     {
-        Debug.Log(State);
         State.Write(EState.Online);
     }
 
     public void OnDisconnected(object sender, EventArgs e)
     {
+        Debug.Log("Overlay status OnDisconnected");
         State.Write(EState.Offline);
     }
 
@@ -72,8 +72,6 @@ public class OnlineStatusOverlay : MonoBehaviour
 
         image.color = OfflineColor;
         text.text = OfflineText;
-
-        Debug.Log("init State");
 
         State = new SharedUpdatable<EState>(EState.Offline);
         State.UpdateAction = updateState;

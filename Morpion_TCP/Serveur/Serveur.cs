@@ -12,97 +12,143 @@ using System.Linq;
 namespace Serveur
 {
     
-    class Serveur
+    /// <summary>
+    /// a server that handles multiples clients, allowing games to take place
+    /// </summary>
+    public class Server
     {
-        private static int _next_id = 0;
-        public readonly string LogFile = "serveur_log.txt";
-        public readonly Mutex LogMutex = new Mutex();
+        // ---- Static fields/properties ----
 
-        public int port = 13000; 
-        public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+        private static int next_id = 0;
 
-        private Mutex _usersMutex = new Mutex();
-        private Dictionary<int, UserHandler> _userHandlers = new Dictionary<int, UserHandler>();
+        // ---- Public fields/properties ----
+
+        public readonly LogWriter LogWriter;
+
+        private readonly object usersLock = new object();
+        private Dictionary<int, UserHandler> userHandlers = new Dictionary<int, UserHandler>();
         public Dictionary<int, UserHandler> UsersHandlers
         {
             set
             {
-                _usersMutex.WaitOne();
-                _userHandlers = value;
-                _usersMutex.ReleaseMutex();
+                lock (usersLock)
+                {
+                    userHandlers = value;
+                }
             }
             get
             {
-                _usersMutex.WaitOne();
-                Dictionary<int, UserHandler> userHandlers_copy = new Dictionary<int, UserHandler>(_userHandlers);
-                _usersMutex.ReleaseMutex();
+                Dictionary<int, UserHandler> userHandlers_copy;
+                lock (usersLock)
+                {
+                    userHandlers_copy = new Dictionary<int, UserHandler>(userHandlers);
+                }
                 return userHandlers_copy;
 
             }
         }
 
-       
+
+
+        // ---- Private fields/properties ----
+        private readonly string LogFile = "serveur_log.txt";
         
+        private int Port; 
+        private IPAddress Ip;
 
-        private bool _continuer;
-        private const int CMD_SIZE = 4;
+        private bool keepRunning;
 
-        private TcpListener _tcp_server = null;
-        private Thread _listeningThread = null;
+        private TcpListener tcpListener = null;
+        private Thread listeningThread = null;
 
+        // ---- Public methods ----
+        
+        public Server()
+        {
+            LogWriter = new LogWriter(LogFile);
+            Port = 13000;
+            Ip = IPAddress.Parse("127.0.0.1");
+        }
+
+        /// <summary>
+        /// launch the server at <see cref="Ip"/> and <see cref="Port"/>
+        /// </summary>
         public void Start()
         {
-            _continuer = true;
+            keepRunning = true;
 
-            _tcp_server = new TcpListener(localAddr, port);
-            _tcp_server.Start();
+            tcpListener = new TcpListener(Ip, Port);
+            tcpListener.Start();
 
-            _listeningThread = new Thread(() => ListenConnexion());
-            _listeningThread.Start();
+            listeningThread = new Thread(ListenConnexion);
+            listeningThread.Start();
         }
 
+        /// <summary>
+        /// stop the server
+        /// </summary>
         public void Stop()
         {
-            _continuer = false;
+            keepRunning = false;
+            tcpListener.Stop();
         }
 
+        // ---- Private methods ----
+
+        /// <summary>
+        /// wait for new clients to connect and create a <see cref="UserHandler"/> instance for each of them
+        /// </summary>
         private void ListenConnexion()
         {
-            while (_continuer)
+            while (keepRunning)
             {
+                try
+                {
+                    TcpClient client = tcpListener.AcceptTcpClient();
 
-                TcpClient client = _tcp_server.AcceptTcpClient();
+                    lock (usersLock)
+                    {
+                        userHandlers[next_id] = new UserHandler(client, next_id, this);
+                        userHandlers[next_id].Start();
+                    }
 
-                _usersMutex.WaitOne();
-                _userHandlers[_next_id] = new UserHandler(client, _next_id, _userHandlers, _usersMutex, LogFile, LogMutex);
-                _userHandlers[_next_id].Start();
-                _usersMutex.ReleaseMutex();
+                    LogWriter.Write($"A new connexion has been made, the user has been asigned the id {next_id}");
+                    next_id++;
+                }
+                catch (System.Net.Sockets.SocketException) // server has been shutdown
+                {
 
-                //Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {_next_id}");
-                Messaging.WriteLog(LogFile, LogMutex, $"A new connexion has been made, the user has been asigned the id {_next_id}");
-                _next_id++;
+                }
+                
 
             }
-
-            foreach (var userHandler in _userHandlers.Values)
+            
+            //shutdown every userHandler
+            foreach (var userHandler in userHandlers.Values)
             {
                 userHandler.KeepChatting = false;
             }
         }
 
+        // ---- Main ----
+
+        /// <summary>
+        /// provide the console interface to monitor the server
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             UserHandler.InnitMethods();
 
-            Serveur my_serveur = new Serveur();
+            Server myServer = new Server();
             Console.WriteLine("Bienvenue dans le gestionnaire serveur du Morpion3D");
 
-            bool keep_asking = true;
-            while (keep_asking)
+            bool keepAsking = true;
+            while (keepAsking)
             {
                 Console.WriteLine("Que voulez-vous faire?" +
-                    $"\n\t0-changer le port du serveur (current {my_serveur.port})" +
-                    $"\n\t1-changer l'adresse du serveur (current {my_serveur.localAddr})" +
+                    $"\n\t0-changer le port du serveur (current {myServer.Port})" +
+                    $"\n\t1-changer l'adresse du serveur (current {myServer.Ip})" +
                     "\n\t2-lancer le serveur");
                 string choice = Console.ReadLine();
                 if (choice == "0")
@@ -113,7 +159,7 @@ namespace Serveur
 
                     if (int.TryParse(inputString, out int new_port))
                     {
-                        my_serveur.port = new_port;
+                        myServer.Port = new_port;
                     }
                     else
                     {
@@ -128,7 +174,7 @@ namespace Serveur
 
                     if (IPAddress.TryParse(inputString, out IPAddress new_adress))
                     {
-                        my_serveur.localAddr = new_adress;
+                        myServer.Ip = new_adress;
                     }
                     else
                     {
@@ -137,9 +183,9 @@ namespace Serveur
                 }
                 else if (choice == "2")
                 {
-                    Console.WriteLine($"\n\n>>  lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}\n\n");
-                    Messaging.WriteLog(my_serveur.LogFile, my_serveur.LogMutex,  $"lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}");
-                    keep_asking = false;
+                    Console.WriteLine($"\n\n>>  lancement du serveur sur le port {myServer.Port} de l'adresse {myServer.Ip}\n\n");
+                    myServer.LogWriter.Write($"lancement du serveur sur le port {myServer.Port} de l'adresse {myServer.Ip}");
+                    keepAsking = false;
                 }
                 else
                 {
@@ -147,10 +193,10 @@ namespace Serveur
                 }
             }
 
-            my_serveur.Start();
+            myServer.Start();
 
-            keep_asking = true;
-            while (keep_asking)
+            keepAsking = true;
+            while (keepAsking)
             {
                 Console.WriteLine("Que voulez-vous faire?" +
                 "\n\t0-afficher les utilisateurs connectés" +
@@ -159,12 +205,12 @@ namespace Serveur
                 string choice = Console.ReadLine();
                 if (choice == "0")
                 {
-                    var connected_users = from user in my_serveur.UsersHandlers.Values
-                                          where user.ClientSocket.Connected
+                    var connectedUSers = from user in myServer.UsersHandlers.Values
+                                          where user.Connected
                                           orderby user.Id, user.UserName
                                           select user;
-                    Console.WriteLine($"Voici les {connected_users.Count()} utilisateurs connectés:");
-                    foreach (var user in connected_users)
+                    Console.WriteLine($"Voici les {connectedUSers.Count()} utilisateurs connectés:");
+                    foreach (var user in connectedUSers)
                     {
                         Console.WriteLine($"id {user.Id}, username: {user.UserName}");
                     }
@@ -172,12 +218,12 @@ namespace Serveur
                 }
                 else if (choice == "1")
                 {
-                    var ingame__users = from user in my_serveur.UsersHandlers.Values
-                                        where user.ClientSocket.Connected && user.Game != null
+                    var ingameUsers = from user in myServer.UsersHandlers.Values
+                                        where user.Connected && user.Game != null
                                         orderby user.Id, user.UserName
                                         select user;
-                    Console.WriteLine($"Voici les {ingame__users.Count()} utilisateurs en jeu:");
-                    foreach (var user in ingame__users)
+                    Console.WriteLine($"Voici les {ingameUsers.Count()} utilisateurs en jeu:");
+                    foreach (var user in ingameUsers)
                     {
                         Console.WriteLine($"id {user.Id}, username: {user.UserName}");
                     }
@@ -185,9 +231,9 @@ namespace Serveur
                 else if (choice == "2")
                 {
                     Console.WriteLine($"\n\n>>  extinction du serveur\n\n");
-                    my_serveur.Stop();
-                    Messaging.WriteLog(my_serveur.LogFile, my_serveur.LogMutex, $"arrêt du serveur");
-                    keep_asking = false;
+                    myServer.Stop();
+                    myServer.LogWriter.Write($"arrêt du serveur");
+                    keepAsking = false;
                 }
                 else
                 {

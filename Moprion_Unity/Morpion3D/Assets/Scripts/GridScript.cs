@@ -5,37 +5,67 @@ using MyClient;
 using MyClient.Models;
 using MyClient.ModelGame;
 
-
+/// <summary>
+/// Handles the "grid" gameboard and is responsible for processing new game execution updates sent by the <see cref="Client"/>
+/// as well as notifying who's turn is it and played positions.
+/// </summary>
 public class GridScript : MonoBehaviour
 {
-    ////// Events //////
+    // ---- Enums ---
 
+    public enum EPlayerTurn
+    {
+        Default,
+        IsPlayerTurn,
+        IsOpponentTurn,
+        PlayerWon,
+        OpponentWon,
+        OpponentDisconnected,
+    }
+
+    // ---- Events ---
+
+    /// <summary>Fired when the grid is ready for begining a game.</summary>
     public event EventHandler ReadyGame;
-    public event EventHandler<TEventArgs<PlayerEstate>> PlayerTurn;
+    /// <summary>Fired when the player turn has changed.</summary>
+    public event EventHandler<TEventArgs<EPlayerTurn>> PlayerTurnChanged;
+    /// <summary>Fired when the player has played.</summary>
     public event EventHandler<TEventArgs<System.Numerics.Vector3>> PositionPlayed;
 
-    ////// Prefabs //////
+    // ---- Prefabs ----
 
+    /// <summary>Prefab object set through UnityEditor</summary>
     public GameObject CubeletPrefab;
+    /// <summary>Prefab object set through UnityEditor</summary>
     public GameObject CrossPrefab;
+    /// <summary>Prefab object set through UnityEditor</summary>
     public GameObject CrossWonPrefab;
+    /// <summary>Prefab object set through UnityEditor</summary>
     public GameObject TorePrefab;
+    /// <summary>Prefab object set through UnityEditor</summary>
     public GameObject ToreWonPrefab;
 
-    ////// Public fields/properties //////
+    // ---- Public fields/properties ----
 
+    /// <summary>Rotation speed in degrees per second (default: 10)</summary>
     public float RotatationSpeed;
+    /// <summary>Player filling pattern GameObject according to its setting</summary>
     public GameObject PlayerFillingObject { get; private set; }
+    /// <summary>Player winning filling pattern GameObject according to its setting</summary>
     public GameObject OpponentFillingObject { get; private set; }
+    /// <summary>Opponent filling pattern GameObject</summary>
     public GameObject PlayerWonFillingObject { get; private set; }
+    /// <summary>Opponent winning filling pattern GameObject</summary>
     public GameObject OpponentWonFillingObject { get; private set; }
 
-    ////// Private fields/properties //////
+    // ---- Private fields/properties ----
 
     private SharedUpdatable<Game> gameState;
     private CubeletScript[,,] cubelets;
-    private Action updateFunction;
 
+    /// <summary>Action called each frame by <see cref="Update"/></summary>
+    private Action updateFunction;
+    
     private GameObject player1FillingObject;
     private GameObject player1WonFillingObject;
     private GameObject player2FillingObject;
@@ -46,25 +76,19 @@ public class GridScript : MonoBehaviour
 
     private MainScript mainScript;
 
-    ////// Public methods //////
+    // ---- Public methods ----
 
+    /// <summary>Activate / Desactivate the attached GameObject.</summary>
     public void SetActive(bool value) => gameObject.SetActive(value);
 
-    public enum PlayerEstate
-    {
-        IsTurn,
-        NotIsTurn,
-        Won,
-        Lose,
-        Alone
-    }
-    ////// Events Handlers //////
 
-    public void OnOpponentDisconnected(object sender, EventArgs e)
-    {
-        SetPlayerTurn(PlayerEstate.Alone);
-    }
+    // ---- Events Handlers ----
 
+    /// <summary>
+    /// Process <see cref="MainScript.State"/> changes;
+    /// </summary>
+    /// <param name="sender">Must be the <see cref="MainScript"/>.</param>
+    /// <param name="e">Ignored</param>
     public void OnStateChange(object sender, EventArgs e)
     {
         MainScript ms = sender as MainScript;
@@ -80,7 +104,9 @@ public class GridScript : MonoBehaviour
                 updateFunction = NotInGameBehaviour;
                 break;
             case EState.ToMenu:
+                // Completely reset the grid before going to menu.
                 ResetGrid();
+                firstUpdate = true;
                 updateFunction = NotInGameBehaviour;
                 break;
             default:
@@ -94,12 +120,22 @@ public class GridScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Store the new <see cref="gameState"/>, which will be processed in <see cref="Upate"/> by <see cref="InGameBehaviour"/> in the next frame.
+    /// </summary>
+    /// <param name="sender">Must be the <see cref="Client"/></param>
+    /// <param name="e">Ignored.</param>
     public void OnGameUpdated(object sender, EventArgs e)
     {
         var client = sender as Client;
         gameState.Write(client.GameClient);
     }
 
+    /// <summary>
+    /// Process player plattern setting changes in the <see cref="OptionsMenu"/>
+    /// </summary>
+    /// <param name="sender">Ignored</param>
+    /// <param name="e">The new player pattern.</param>
     public void OnPlayerPatternChanged(object sender, TEventArgs<EPlayerPatterns> e)
     {
         switch (e.Data)
@@ -121,13 +157,18 @@ public class GridScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Process a <see cref="CubeletScript.Clicked"/> event, attach the cubelet position and fire <see cref="PositionPlayed"/> event.
+    /// </summary>
+    /// <param name="sender">A <see cref="CubeletScript"/></param>
+    /// <param name="e">Ignored</param>
     public void OnCubeletClicked(object sender, EventArgs e)
     {
         var cubelet = sender as CubeletScript;
         PositionPlayed?.Invoke(this, new TEventArgs<System.Numerics.Vector3>(cubelet.Position));
     }
 
-    ///// Private Methods /////
+    // ---- Private Methods ----
 
     private void Awake()
     {
@@ -151,7 +192,7 @@ public class GridScript : MonoBehaviour
     private void InGameBehaviour()
     {
         if (Input.GetKeyDown(KeyCode.Space))
-            SetExternCubeletsActive(!cubelets[0, 0, 0].gameObject.activeInHierarchy);
+            SetExternCubeletsActive(!cubelets[0,0,0].gameObject.activeInHierarchy);
         gameState.TryProcessIfNew();
     }
 
@@ -191,7 +232,7 @@ public class GridScript : MonoBehaviour
                     var cubeletScript = cubelet.GetComponent<CubeletScript>();
                     cubeletScript.Position = new System.Numerics.Vector3(x, y, z);
                     cubeletScript.Clicked += OnCubeletClicked;
-                    GetComponentInParent<MainScript>().StateChange += cubeletScript.OnStateChange;
+                    GetComponentInParent<MainScript>().StateChanged += cubeletScript.OnStateChange;
                     cubelets[x, y, z] = cubeletScript;
                 }
     }
@@ -213,10 +254,13 @@ public class GridScript : MonoBehaviour
                         cubelets[x, y, z].SetActive(active);
     }
 
+    /// <summary>
+    /// Process new <see cref="gameState"/>.
+    /// </summary>
     private void UpdateGameState(Game gameState)
     {
-        Debug.Log("In: UpdateGameState()");
-        if (firstUpdate)
+        // If it's the first gameState set who is player1 and associate patterns to player1 / player2
+        if(firstUpdate)
         {
             isPlayer1 = gameState.IdPlayer1 != mainScript.Client.Opponent.Id;
             player1FillingObject = isPlayer1 ? PlayerFillingObject : OpponentFillingObject;
@@ -224,15 +268,14 @@ public class GridScript : MonoBehaviour
             player1WonFillingObject = isPlayer1 ? PlayerWonFillingObject : OpponentWonFillingObject;
             player2WonFillingObject = !isPlayer1 ? PlayerWonFillingObject : OpponentWonFillingObject;
 
-            Debug.Log("FirstUpdateGameState()");
             firstUpdate = false;
         }
 
-        /// Updating whole grid crosses and tores
+        // Updating whole grid crosses and tores
         for (var x = 0; x < 3; x++)
             for (var y = 0; y < 3; y++)
                 for (var z = 0; z < 3; z++)
-                    switch (gameState.GameBoardMatrix[x, y, z])
+                    switch (gameState.GameBoardMatrix[x,y,z])
                     {
                         case (int)Cell.Player1Pattern:
                             cubelets[x, y, z].FillWith(player1FillingObject);
@@ -250,37 +293,27 @@ public class GridScript : MonoBehaviour
                             break;
                     }
 
-        Debug.Log("Game grid updated!");
 
-
+        // Fires playerTurnChanged event
+        TEventArgs<EPlayerTurn> turn = new TEventArgs<EPlayerTurn>(default);
         switch (gameState.Mode)
         {
             case GameMode.Player1:
-                SetPlayerTurn(isPlayer1 ? PlayerEstate.IsTurn : PlayerEstate.NotIsTurn);
+                turn.Data = isPlayer1 ? EPlayerTurn.IsPlayerTurn : EPlayerTurn.IsOpponentTurn;
                 break;
             case GameMode.Player2:
-                SetPlayerTurn(!isPlayer1 ? PlayerEstate.IsTurn : PlayerEstate.NotIsTurn);
+                turn.Data = !isPlayer1 ? EPlayerTurn.IsPlayerTurn : EPlayerTurn.IsOpponentTurn;
                 break;
             case GameMode.Player1Won:
-                SetPlayerTurn(isPlayer1 ? PlayerEstate.Won : PlayerEstate.Lose);
+                turn.Data = isPlayer1 ? EPlayerTurn.PlayerWon : EPlayerTurn.OpponentWon;
                 break;
             case GameMode.Player2Won:
-                SetPlayerTurn(!isPlayer1 ? PlayerEstate.Won : PlayerEstate.Lose);
+                turn.Data = !isPlayer1 ? EPlayerTurn.PlayerWon : EPlayerTurn.OpponentWon;
                 break;
             case GameMode.NoneWon:
                 break;
-            default:
-                break;
         }
+        PlayerTurnChanged?.Invoke(this, turn);
 
-                Debug.Log("Game mode changed!");
-
-        }
-
-    private void SetPlayerTurn(PlayerEstate playerEstate)
-    {
-        PlayerTurn?.Invoke(this, new TEventArgs<PlayerEstate>(playerEstate));
     }
-
 }
-

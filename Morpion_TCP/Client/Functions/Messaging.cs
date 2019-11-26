@@ -28,22 +28,6 @@ namespace MyClient.Functions
     public class Messaging
     {
 
-        public static int StreamRead(MyClient client, byte[] message)
-        {
-            client.StreamMutex.WaitOne();
-            int n_bytes = client.Stream.Read(message, 0, message.Length);
-            client.StreamMutex.ReleaseMutex();
-
-            return n_bytes;
-        }
-
-        public static void StreamWrite(MyClient client, byte[] message)
-        {
-            client.StreamMutex.WaitOne();
-            client.Stream.Write(message, 0, message.Length);
-            client.StreamMutex.ReleaseMutex();
-        }
-
         //Serialization
 
         private static byte[] serializationMessage(NomCommande nomCommande)
@@ -114,28 +98,34 @@ namespace MyClient.Functions
 
         // General commands
 
+        public static void RecievePing(byte[] bytes, MyClient client)
+        {
+            //client.LogWriter.Write("ping recieved from the server");
+        }
+
+
         public static void SendPing(MyClient client)
         {
             byte[] msg = serializationMessage(NomCommande.PNG);
-            StreamWrite(client, msg);
+            client.StreamWrite(msg);
         }
 
         public static void RecieveMessage(byte[] bytes, MyClient client)
         {
             string message = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-            WriteLog(client, "message recieved from the server: " + message);
+            client.LogWriter.Write("message recieved from the server: " + message);
         }
 
         public static void AskOtherUsers(MyClient client)
         {
             byte[] msg = serializationMessage(NomCommande.OUS);
-            StreamWrite(client, msg);
+            client.StreamWrite(msg);
         }
 
         public static void RecieveOtherUsers(byte[] bytes, MyClient client)
         {
             int n_users = BitConverter.ToInt16(bytes, 0);
-            client.connected_users = new Dictionary<int, User>();
+            Dictionary<int, User> newConnectedUsers = new Dictionary<int, User>();
             int byte_compt = 2;
             for(int i = 0; i < n_users; i++)
             {
@@ -143,21 +133,23 @@ namespace MyClient.Functions
                 int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
                 string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
 
-                client.connected_users[user_id] = new User(user_id, userName);
+                newConnectedUsers[user_id] = new User(user_id, userName);
             }
+
+            client.ConnectedUsers = new Dictionary<int, User>(newConnectedUsers);
 
         }
 
         public static void SendMessage(MyClient client, string message)
         {
             byte[] msg = serializationMessage(message, NomCommande.MSG);
-            StreamWrite(client, msg);
+            client.StreamWrite(msg);
         }
 
         public static void SendUserName(MyClient client, string userName)
         {
             byte[] msg = serializationMessage(userName, NomCommande.USN);
-            StreamWrite(client, msg);
+            client.StreamWrite(msg);
         }
 
         // Game Requests commands
@@ -165,7 +157,7 @@ namespace MyClient.Functions
         public static void RequestMatch(MyClient client, int id)
         {
             byte[] msg = serializationMessage(BitConverter.GetBytes((Int16)id), NomCommande.MRQ);
-            StreamWrite(client, msg);
+            client.StreamWrite(msg);
         }
 
         public static void RecieveGameRequestStatus(byte[] bytes, MyClient client)
@@ -177,12 +169,12 @@ namespace MyClient.Functions
             {
                 Console.WriteLine($">> l'identifiant de l'adversaire est {idOpponent}");
                 Console.WriteLine($">> le dictionnaire client.connected_users est :");
-                foreach (int key in client.connected_users.Keys)
+                foreach (int key in client.ConnectedUsers.Keys)
                 {
                     Console.WriteLine($"la clef est {key}");
-                    client.connected_users[key].Display();
+                    client.ConnectedUsers[key].Display();
                 }
-                client.Opponent = client.connected_users[idOpponent];
+                client.Opponent = client.ConnectedUsers[idOpponent];
             }
         }
 
@@ -192,9 +184,9 @@ namespace MyClient.Functions
             int user_id = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
             int userName_length = BitConverter.ToInt16(bytes, byte_compt); byte_compt += 2;
             string userName = System.Text.Encoding.UTF8.GetString(bytes, byte_compt, userName_length); byte_compt += userName_length;
-            if (!(client.connected_users.ContainsKey(user_id)))
+            if (!(client.ConnectedUsers.ContainsKey(user_id)))
             {
-                client.connected_users[user_id]= new User(user_id, userName);
+                client.ConnectedUsers[user_id]= new User(user_id, userName);
             }
             client.gameRequestsRecieved[user_id] = new User(user_id, userName);
         }
@@ -207,26 +199,26 @@ namespace MyClient.Functions
             if (response)
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
-                StreamWrite(client, bytes);
-                foreach (var key in client.connected_users.Keys)
+                client.StreamWrite(bytes);
+                foreach (var key in client.ConnectedUsers.Keys)
                 {
                     Console.WriteLine($"le dictionnaire client.connected_users contient l'id {key} en clef");
-                    client.connected_users[key].Display();
+                    client.ConnectedUsers[key].Display();
                 }
-                client.Opponent = client.connected_users[idOpponent];
+                client.Opponent = client.ConnectedUsers[idOpponent];
                 client.gameRequestsRecieved.Remove(idOpponent);
                 var itemsToRemove = client.gameRequestsRecieved.ToArray();
                 foreach (var opponent in itemsToRemove)
                 {
                     bytes = serializationMessage(serializationResponseOpponent(opponent.Key, !response), NomCommande.GRR);
-                    StreamWrite(client, bytes);
+                    client.StreamWrite(bytes);
                     client.gameRequestsRecieved.Remove(opponent.Key);
                 }
             }
             else
             {
                 byte[] bytes = serializationMessage(serializationResponseOpponent(idOpponent, response), NomCommande.GRR);
-                StreamWrite(client, bytes);
+                client.StreamWrite(bytes);
                 client.gameRequestsRecieved.Remove(idOpponent);
             }
         }
@@ -236,33 +228,19 @@ namespace MyClient.Functions
         {
             byte[] positionBytes = Serialization.SerializationPositionPlayed(position);
             byte[] msg = serializationMessage(positionBytes, NomCommande.NPP);
-            StreamWrite(client, msg);
+            client.StreamWrite(msg);
         }
 
         public static void AskGameBoard(MyClient client)
         {
             byte[] msg = serializationMessage(NomCommande.DGB);
-            StreamWrite(client, msg);
+            client.StreamWrite(msg);
         }
 
         public static void RecieveGameBoard(byte[] bytes, MyClient client)
         {
             Console.WriteLine($"GameBoard recue");
             client.GameClient = Serialization.DeserializationMatchStatus(bytes);
-        }
-
-        public static void WriteLog(MyClient client, string log)
-        {
-            DateTime localDate = DateTime.Now;
-            string log_date = localDate.ToString("s");
-
-            client.LogMutex.WaitOne();
-            using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(client.LogFile, true))
-            {
-                file.WriteLine(log_date + " " + log);
-            }
-            client.LogMutex.ReleaseMutex();
         }
     }
 

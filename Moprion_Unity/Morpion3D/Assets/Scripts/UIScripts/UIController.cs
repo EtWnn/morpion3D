@@ -52,10 +52,16 @@ public class UIController : MonoBehaviour
         MatchRequestHandler = popupPanelGo.GetComponent<MatchRequestHandler>();
         TurnIndicator = transform.Find("Canvas/TurnIndicator").GetComponent<TurnIndicator>();
         GameCommandsOverlay = transform.Find("Canvas/GameCommandsOverlay").gameObject;
+
+        //// Hack set OptionMenu active so its awke script is run.
+        //OptionsMenu.SetActive(true);
     }
 
     private void Start()
     {
+        //// Hack end: desactivate option menu
+        //OptionsMenu.SetActive(true);
+
         StateChange += MainMenu.OnMenuStateChange;
         StateChange += OptionsMenu.OnMenuStateChange;
         StateChange += OpponentsMenu.OnMenuStateChange;
@@ -74,7 +80,7 @@ public class UIController : MonoBehaviour
 
     ///// Event handlers /////
 
-    public void OnMainStateChange(object sender, EventArgs e)
+    public void OnStateChange(object sender, EventArgs e)
     {
         var ms = sender as MainScript;
         if (ms && ms.State == EState.InMainMenu)
@@ -89,7 +95,7 @@ public class UIController : MonoBehaviour
 
     private void OnSubMenuExiting(object sender, EventArgs e) => State = EStateUI.InMainMenu;
 
-    public void OnGameTurnChanged(object sender, TEventArgs<GridScript.PlayerEstate> e)
+    public void OnGameTurnChanged(object sender, TEventArgs<GridScript.EPlayerTurn> e)
     {
         TurnIndicator.SetTurn(e.Data);
     }
