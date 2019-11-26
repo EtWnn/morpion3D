@@ -75,7 +75,8 @@ namespace MyClient
         public MyClient()
         {
             string to_date_string = DateTime.Now.ToString("s");
-            LogFile = "client_log_" + to_date_string + ".txt";
+            Directory.CreateDirectory("logs");
+            LogFile = "logs/client_log_" + to_date_string + ".txt";
             LogFile = LogFile.Replace(':', '_');
 
             LogWriter = new LogWriter(LogFile);
