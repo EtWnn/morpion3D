@@ -13,7 +13,8 @@ public class TurnIndicator : MonoBehaviour
     private const string PlayerLoseText = "<color=#66FFD9><size=110%>You</size=150%></color=#66FFD9> lose !";
     private const string PlayerTurnText = "<color=#66FFD9><size=110%>Your</size=150%></color=#66FFD9> turn !";
     private const string OpponentTurnText = "<color=#66FFD9><size=110%>Opponent's</size=150%></color=#66FFD9> turn !";
-    
+    private const string OpponentDisconnectedText = "<color=#66FFD9><size=110%>Your opponent is</size=150%></color=#66FFD9> disconnected !";
+
     private TextMeshProUGUI _tmpText;
     public string Text
     {
@@ -49,6 +50,11 @@ public class TurnIndicator : MonoBehaviour
                 Text = PlayerLoseText;
                 SetBackgroundActive(true);
                 BackButton.gameObject.SetActive(true);
+                break;
+            case (GridScript.PlayerEstate.Alone):
+                Text = OpponentDisconnectedText;
+                SetBackgroundActive(true);
+                // BackButton.gameObject.SetActive(true);
                 break;
         }
     }

@@ -268,7 +268,7 @@ namespace Serveur.Functions
             int idRecipient = (userHandler.Id == userHandler.Game.IdPlayer1)? userHandler.Game.IdPlayer2 : userHandler.Game.IdPlayer1;
             byte[] msg_serialized=serializationMessage(new byte[0], NomCommande.NDC);
             Messaging.WriteLog(userHandler.log_file, $"*** SendNotifcationDisconnection: try from {idSender} to {idRecipient}");
-             userHandler.UsersHandlers[idRecipient].stream.Write(msg_serialized, 0, msg_serialized.Length);
+            userHandler.UsersHandlers[idRecipient].stream.Write(msg_serialized, 0, msg_serialized.Length);
             Messaging.WriteLog(userHandler.log_file, $"*** SendNotifcationDisconnection: success");
         }
         
