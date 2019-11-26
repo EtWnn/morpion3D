@@ -258,8 +258,14 @@ namespace Serveur.Functions
             userHandler.UsersHandlers[idRecipient].StreamWrite(msg_serialized);
             userHandler.ServerLogWriter.Write( $"*** SendNotifcationDisconnection: success");
         }
-        
-        
+
+        public static void SendPing(UserHandler userHandler)
+        {
+            byte[] msg = serializationMessage(new byte[0], NomCommande.PNG);
+            StreamWrite(userHandler, msg);
+        }
+
+
         public static void SendMessage(UserHandler userHandler, string message)
         {
 

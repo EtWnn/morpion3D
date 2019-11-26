@@ -63,6 +63,7 @@ namespace MyClient
             methods[NomCommande.MRQ] = Messaging.RecieveGameRequest;
             methods[NomCommande.DGB] = Messaging.RecieveGameBoard;
             methods[NomCommande.NDC] = Messaging.RecieveOpponentDisconnection;
+            methods[NomCommande.NDC] = Messaging.RecievePing;
         }
 
         public Client()
