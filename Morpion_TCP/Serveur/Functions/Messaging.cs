@@ -263,17 +263,13 @@ namespace Serveur.Functions
             return new byte[0];
         }
 
-        public static void SendNotifcationDisconnection(NetworkStream stream, UserHandler userHandler)
+        public static void SendNotifcationDisconnection(UserHandler userHandler)
         {
             int idSender = userHandler.Id;
             int idRecipient = (userHandler.Id == userHandler.Game.IdPlayer1)? userHandler.Game.IdPlayer2 : userHandler.Game.IdPlayer1;
             byte[] msg_serialized=serializationMessage(new byte[0], NomCommande.NDC);
             Messaging.WriteLog(userHandler, $"*** SendNotifcationDisconnection: try from {idSender} to {idRecipient}");
-
-            userHandler.UsersHandlers[idRecipient].StreamMutex.WaitOne();
-            userHandler.UsersHandlers[idRecipient].Stream.Write(msg_serialized, 0, msg_serialized.Length);
-            userHandler.UsersHandlers[idRecipient].StreamMutex.ReleaseMutex();
-
+            StreamWrite(userHandler.UsersHandlers[idRecipient], msg_serialized);
             Messaging.WriteLog(userHandler, $"*** SendNotifcationDisconnection: success");
         }
         
@@ -295,6 +291,8 @@ namespace Serveur.Functions
             StreamWrite(userHandler, msg);
 
         }
+
+
 
         public static void WriteLog(string logFile, Mutex logMutex, string log)
         {

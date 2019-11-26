@@ -126,7 +126,7 @@ namespace Serveur.Models
                     if(Game != null) //si le joueur était en jeu
                     {
                         // à faire: prévenir l'autre joueur
-
+                        Messaging.SendNotifcationDisconnection(this);
                         Game = null;
                     }
 
