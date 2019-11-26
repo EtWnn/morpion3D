@@ -20,14 +20,6 @@ namespace Serveur.Models
 
         private static Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>> methods = new Dictionary<NomCommande, Func<byte[], UserHandler, byte[]>>();
 
-        private readonly Server Server;
-
-        private TcpClient ClientSocket { get; set; }
-        private NetworkStream Stream;
-        private readonly object streamLock = new object();
-
-        private const int pingDelay = 500;
-
         // ---- Public fields/properties ----
 
         public bool KeepChatting;
@@ -43,6 +35,13 @@ namespace Serveur.Models
 
         // ---- Private fields/properties ----
 
+        private readonly Server Server;
+
+        private TcpClient ClientSocket { get; set; }
+        private NetworkStream Stream;
+        private readonly object streamLock = new object();
+
+        private const int pingDelay = 500;
 
         // ---- Static methods ----
 
@@ -207,12 +206,12 @@ namespace Serveur.Models
 
                     
                 }
-                catch (System.IO.IOException ex) //à faire: prendre en compte la fermeture inatendue du canal par le client
+                catch (System.IO.IOException) 
                 {
                     KeepChatting = false;
                     Server.LogWriter.Write($"the user {this.UserName} Id {this.Id} got disconnected");
 
-                    if(Game != null) //si le joueur était en jeu
+                    if(Game != null)
                     {
                         int IdPlayer1 = Game.IdPlayer1;
                         int IdPlayer2 = Game.IdPlayer2;

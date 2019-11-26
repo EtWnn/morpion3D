@@ -12,14 +12,18 @@ using System.Linq;
 namespace Serveur
 {
     
+    /// <summary>
+    /// a server that handles multiples clients, allowing games to take place
+    /// </summary>
     public class Server
     {
-        private static int next_id = 0;
-        private readonly string LogFile = "serveur_log.txt";
-        public readonly LogWriter LogWriter;
+        // ---- Static fields/properties ----
 
-        private int Port; 
-        private IPAddress Ip;
+        private static int next_id = 0;
+
+        // ---- Public fields/properties ----
+
+        public readonly LogWriter LogWriter;
 
         private readonly object usersLock = new object();
         private Dictionary<int, UserHandler> userHandlers = new Dictionary<int, UserHandler>();
@@ -27,7 +31,7 @@ namespace Serveur
         {
             set
             {
-                lock(usersLock)
+                lock (usersLock)
                 {
                     userHandlers = value;
                 }
@@ -43,13 +47,22 @@ namespace Serveur
 
             }
         }
-        
 
-        private bool continuer;
+
+
+        // ---- Private fields/properties ----
+        private readonly string LogFile = "serveur_log.txt";
+        
+        private int Port; 
+        private IPAddress Ip;
+
+        private bool keepRunning;
 
         private TcpListener tcpListener = null;
         private Thread listeningThread = null;
 
+        // ---- Public methods ----
+        
         public Server()
         {
             LogWriter = new LogWriter(LogFile);
@@ -57,49 +70,72 @@ namespace Serveur
             Ip = IPAddress.Parse("127.0.0.1");
         }
 
-
+        /// <summary>
+        /// launch the server at <see cref="Ip"/> and <see cref="Port"/>
+        /// </summary>
         public void Start()
         {
-            continuer = true;
+            keepRunning = true;
 
             tcpListener = new TcpListener(Ip, Port);
             tcpListener.Start();
 
-            listeningThread = new Thread(() => ListenConnexion());
+            listeningThread = new Thread(ListenConnexion);
             listeningThread.Start();
         }
 
+        /// <summary>
+        /// stop the server
+        /// </summary>
         public void Stop()
         {
-            continuer = false;
+            keepRunning = false;
+            tcpListener.Stop();
         }
 
+        // ---- Private methods ----
+
+        /// <summary>
+        /// wait for new clients to connect and create a <see cref="UserHandler"/> instance for each of them
+        /// </summary>
         private void ListenConnexion()
         {
-            while (continuer)
+            while (keepRunning)
             {
-
-                TcpClient client = tcpListener.AcceptTcpClient();
-
-                lock(usersLock)
+                try
                 {
-                    userHandlers[next_id] = new UserHandler(client, next_id, this);
-                    userHandlers[next_id].Start();
+                    TcpClient client = tcpListener.AcceptTcpClient();
+
+                    lock (usersLock)
+                    {
+                        userHandlers[next_id] = new UserHandler(client, next_id, this);
+                        userHandlers[next_id].Start();
+                    }
+
+                    LogWriter.Write($"A new connexion has been made, the user has been asigned the id {next_id}");
+                    next_id++;
                 }
+                catch (System.Net.Sockets.SocketException) // server has been shutdown
+                {
 
-
-                //Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {_next_id}");
-                LogWriter.Write($"A new connexion has been made, the user has been asigned the id {next_id}");
-                next_id++;
+                }
+                
 
             }
-
+            
+            //shutdown every userHandler
             foreach (var userHandler in userHandlers.Values)
             {
                 userHandler.KeepChatting = false;
             }
         }
 
+        // ---- Main ----
+
+        /// <summary>
+        /// provide the console interface to monitor the server
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             UserHandler.InnitMethods();
