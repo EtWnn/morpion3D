@@ -111,7 +111,7 @@ namespace MyClient.Functions
 
         public static void RecievePing(byte[] bytes, Client client)
         {
-            client.LogWriter.Write("ping recieved from the server:");
+            //client.LogWriter.Write("ping recieved from the server");
         }
 
         public static void RecieveMessage(byte[] bytes, Client client)

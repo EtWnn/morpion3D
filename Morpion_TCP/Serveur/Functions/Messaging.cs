@@ -186,9 +186,20 @@ namespace Serveur.Functions
             {
                 byte[] senderRequest_bytes = serializationGameRequest(idSender, userNameSender);
                 byte[] request_msg = serializationMessage(senderRequest_bytes, NomCommande.MRQ);
-                userHandler.UsersHandlers[idRecipient].StreamWrite(request_msg);
+                try
+                {
+                    userHandler.UsersHandlers[idRecipient].StreamWrite(request_msg);
+                    userHandler.ServerLogWriter.Write($"*** TransferMatchRequest: success");
+                }
+                catch(Exception)
+                {
+                    byte[] msg_bytes = serializationResponseOpponent(idRecipient, false);
+                    msg = serializationMessage(msg_bytes, NomCommande.RGR);
+                    userHandler.ServerLogWriter.Write($"*** TransferMatchRequest: failed");
+                }
+                
 
-                userHandler.ServerLogWriter.Write($"*** TransferMatchRequest: success");
+                
             }
             else
             {
