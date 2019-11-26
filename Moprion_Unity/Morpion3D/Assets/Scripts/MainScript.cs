@@ -104,8 +104,8 @@ public class MainScript : MonoBehaviour
 
         State = EState.InMainMenu;
 
-        Client.port = 13000;
-        Client.localAddr = System.Net.IPAddress.Parse("127.0.0.1");
+        Client.Port = 13000;
+        Client.Ip = System.Net.IPAddress.Parse("127.0.0.1");
         TryConnectCO = CoroutineExtensions.StartCoroutineEx(this, IERepeatTryConnect(1f));
     }
 

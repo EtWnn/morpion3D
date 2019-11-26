@@ -70,8 +70,8 @@ namespace Serveur.Models
                 }
                 catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
                 {
-                    StreamMutex.ReleaseMutex();
-                    Messaging.WriteLog(this, "try disconnect with ping method");
+
+                    ServerLogWriter.Write("try disconnect with ping method");
                     KeepChatting = false;
                     if (Game != null) //si le joueur était en jeu
                     {

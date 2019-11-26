@@ -262,7 +262,7 @@ namespace Serveur.Functions
         public static void SendPing(UserHandler userHandler)
         {
             byte[] msg = serializationMessage(new byte[0], NomCommande.PNG);
-            StreamWrite(userHandler, msg);
+            userHandler.StreamWrite(msg);
         }
 
 
