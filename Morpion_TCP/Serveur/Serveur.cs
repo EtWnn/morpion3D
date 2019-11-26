@@ -15,8 +15,8 @@ namespace Serveur
     class Serveur
     {
         private static int _next_id = 0;
-        public const string log_file = "serveur_log.txt";
-
+        public readonly string LogFile = "serveur_log.txt";
+        public readonly Mutex LogMutex = new Mutex();
 
         public int port = 13000; 
         public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
@@ -40,6 +40,8 @@ namespace Serveur
 
             }
         }
+
+       
         
 
         private bool _continuer;
@@ -72,14 +74,19 @@ namespace Serveur
                 TcpClient client = _tcp_server.AcceptTcpClient();
 
                 _usersMutex.WaitOne();
-                _userHandlers[_next_id] = new UserHandler(client, _next_id, _userHandlers, _usersMutex, log_file);
+                _userHandlers[_next_id] = new UserHandler(client, _next_id, _userHandlers, _usersMutex, LogFile, LogMutex);
                 _userHandlers[_next_id].Start();
                 _usersMutex.ReleaseMutex();
 
                 //Console.WriteLine($" >> A new connexion has been made, the user has been asigned the id {_next_id}");
-                Messaging.WriteLog(log_file, $"A new connexion has been made, the user has been asigned the id {_next_id}");
+                Messaging.WriteLog(LogFile, LogMutex, $"A new connexion has been made, the user has been asigned the id {_next_id}");
                 _next_id++;
 
+            }
+
+            foreach (var userHandler in _userHandlers.Values)
+            {
+                userHandler.KeepChatting = false;
             }
         }
 
@@ -131,7 +138,7 @@ namespace Serveur
                 else if (choice == "2")
                 {
                     Console.WriteLine($"\n\n>>  lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}\n\n");
-                    Messaging.WriteLog(log_file, $"lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}");
+                    Messaging.WriteLog(my_serveur.LogFile, my_serveur.LogMutex,  $"lancement du serveur sur le port {my_serveur.port} de l'adresse {my_serveur.localAddr}");
                     keep_asking = false;
                 }
                 else
@@ -153,7 +160,7 @@ namespace Serveur
                 if (choice == "0")
                 {
                     var connected_users = from user in my_serveur.UsersHandlers.Values
-                                          where user.IsAlive()
+                                          where user.ClientSocket.Connected
                                           orderby user.Id, user.UserName
                                           select user;
                     Console.WriteLine($"Voici les {connected_users.Count()} utilisateurs connectés:");
@@ -166,7 +173,7 @@ namespace Serveur
                 else if (choice == "1")
                 {
                     var ingame__users = from user in my_serveur.UsersHandlers.Values
-                                        where user.IsAlive() && user.Game != null
+                                        where user.ClientSocket.Connected && user.Game != null
                                         orderby user.Id, user.UserName
                                         select user;
                     Console.WriteLine($"Voici les {ingame__users.Count()} utilisateurs en jeu:");
@@ -179,7 +186,7 @@ namespace Serveur
                 {
                     Console.WriteLine($"\n\n>>  extinction du serveur\n\n");
                     my_serveur.Stop();
-                    Messaging.WriteLog(log_file, $"arrêt du serveur");
+                    Messaging.WriteLog(my_serveur.LogFile, my_serveur.LogMutex, $"arrêt du serveur");
                     keep_asking = false;
                 }
                 else

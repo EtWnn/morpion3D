@@ -25,6 +25,7 @@ namespace MyClient
         private IPEndPoint _remoteEP = null;
         private bool _continueListen = false;
         private Thread _listeningThread = null;
+        private Thread _pingThread = null;
         public NetworkStream Stream = null;
 
 
@@ -66,12 +67,18 @@ namespace MyClient
                 this._socket.Connect(this._remoteEP);
                 if (this._socket.Connected)
                 {
+                    this._continueListen = true;
+
                     this.Stream = new NetworkStream(this._socket);
                     this.Stream.ReadTimeout = 10;
 
                     //launching the listening thread
                     this._listeningThread = new Thread(() => this.Listen(this.Stream));
                     this._listeningThread.Start();
+
+                    //launching the ping thread
+                    this._pingThread = new Thread(() => this.Ping(this.Stream));
+                    this._pingThread.Start();
                 }
             }
             
@@ -83,14 +90,30 @@ namespace MyClient
             if (this._socket != null && this._socket.Connected)
             {
                 this._continueListen = false;
-                this._socket.Disconnect(false);
+                this._socket.Close();
                 Console.WriteLine("Déconnection effectuée");
+            }
+        }
+
+        void Ping(NetworkStream stream)
+        {
+            while (this._continueListen)
+            {
+                try
+                {
+                    Messaging.SendPing(stream);
+                }
+                catch (Exception) //à faire: prendre en compte la fermeture innatendue du canal par le serveur
+                {
+                    this._continueListen = false;
+                    tryDisconnect();
+                }
+                Thread.Sleep(1000);
             }
         }
 
         void Listen(NetworkStream stream)
         {
-            this._continueListen = true;
             while (this._continueListen)
             {
 
@@ -199,9 +222,11 @@ namespace MyClient
             bool continuer = true;
             while (continuer)
             {
-                Console.WriteLine("Que voulez-vous faire?" +
+                try
+                {
+                    Console.WriteLine("Que voulez-vous faire?" +
                     "\n\t0-envoyer un message" +
-                    "\n\t1-demander les utilisateurs connectés"+
+                    "\n\t1-demander les utilisateurs connectés" +
                     "\n\t2-changer de UserName" +
                     "\n\t3-afficher les utilisateurs connectés" +
                     "\n\t4-afficher les rêquetes de match" +
@@ -213,104 +238,111 @@ namespace MyClient
                     "\n\t10-actualiser le plateau" +
                     "\n\t11-afficher le plateau" +
                     "\n\t12-Jouer une position");
-                string choice = Console.ReadLine();
-                if (choice == "0")
-                {
-
-                    Console.WriteLine("entrez un message");
-                    string message = Console.ReadLine();
-                    Messaging.SendMessage(my_client.Stream, message);
-
-                }
-                else if (choice == "1")
-                {
-                    Messaging.AskOtherUsers(my_client.Stream);
-                    Console.WriteLine("La demande a été émise");
-                }
-                else if (choice == "2")
-                {
-                    Console.WriteLine("entrez un nom d'utilisateur");
-                    string userName = Console.ReadLine();
-                    Messaging.SendUserName(my_client.Stream, userName);
-                }
-                else if (choice == "3")
-                {
-                    my_client.DisplayOtherUser();
-                }
-                else if (choice == "4")
-                {
-                    my_client.DisplayMatchRequest();
-                }
-                else if(choice == "5")
-                {
-                    Console.WriteLine("entrez l'id de l'adversaire:");
-                    int id = Convert.ToInt32(Console.ReadLine());
-                    Console.WriteLine("entrez votre réponse:");
-                    bool accepted = Convert.ToBoolean(Console.ReadLine());
-                    Messaging.SendGameRequestResponse(my_client.Stream, my_client, id, accepted);
-                }
-                else if(choice == "6")
-                {
-                    Console.WriteLine("Entrez l'id de l'adversaire souhaité:");
-                    int id = Convert.ToInt32(Console.ReadLine());
-                    Messaging.RequestMatch(my_client.Stream, id);
-                    Console.WriteLine("Requête envoyée");
-                }
-                else if (choice == "7")
-                {
-                    my_client.tryDisconnect();
-                    
-                }
-                else if (choice == "8")
-                {
-                    my_client.tryConnect();
-                    Console.WriteLine($"Connected to the server {my_client.localAddr}");
-                }
-                else if (choice == "9")
-                {
-                    if (my_client.Opponent != null)
+                    string choice = Console.ReadLine();
+                    if (choice == "0")
                     {
-                        Console.WriteLine($"L'id de votre adversaire est: {my_client.Opponent.Id} et son user name est: {my_client.Opponent.UserName}");
+
+                        Console.WriteLine("entrez un message");
+                        string message = Console.ReadLine();
+                        Messaging.SendMessage(my_client.Stream, message);
+
+                    }
+                    else if (choice == "1")
+                    {
+                        Messaging.AskOtherUsers(my_client.Stream);
+                        Console.WriteLine("La demande a été émise");
+                    }
+                    else if (choice == "2")
+                    {
+                        Console.WriteLine("entrez un nom d'utilisateur");
+                        string userName = Console.ReadLine();
+                        Messaging.SendUserName(my_client.Stream, userName);
+                    }
+                    else if (choice == "3")
+                    {
+                        my_client.DisplayOtherUser();
+                    }
+                    else if (choice == "4")
+                    {
+                        my_client.DisplayMatchRequest();
+                    }
+                    else if (choice == "5")
+                    {
+                        Console.WriteLine("entrez l'id de l'adversaire:");
+                        int id = Convert.ToInt32(Console.ReadLine());
+                        Console.WriteLine("entrez votre réponse:");
+                        bool accepted = Convert.ToBoolean(Console.ReadLine());
+                        Messaging.SendGameRequestResponse(my_client.Stream, my_client, id, accepted);
+                    }
+                    else if (choice == "6")
+                    {
+                        Console.WriteLine("Entrez l'id de l'adversaire souhaité:");
+                        int id = Convert.ToInt32(Console.ReadLine());
+                        Messaging.RequestMatch(my_client.Stream, id);
+                        Console.WriteLine("Requête envoyée");
+                    }
+                    else if (choice == "7")
+                    {
+                        my_client.tryDisconnect();
+
+                    }
+                    else if (choice == "8")
+                    {
+                        my_client.tryConnect();
+                        Console.WriteLine($"Connected to the server {my_client.localAddr}");
+                    }
+                    else if (choice == "9")
+                    {
+                        if (my_client.Opponent != null)
+                        {
+                            Console.WriteLine($"L'id de votre adversaire est: {my_client.Opponent.Id} et son user name est: {my_client.Opponent.UserName}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Aucun adversaire n'est attribué");
+                        }
+                    }
+                    else if (choice == "10")
+                    {
+                        Messaging.AskGameBoard(my_client.Stream);
+                        Console.WriteLine($"Requête envoyée");
+                    }
+                    else if (choice == "11")
+                    {
+                        my_client.DisplayGameBoard();
+                    }
+                    else if (choice == "12")
+                    {
+                        Console.WriteLine($"my_client.GameClient.Mode : {my_client.GameClient.Mode }; GameMode.Player1: {GameMode.Player1}; GameMode.Player2 : {GameMode.Player2}");
+                        Console.WriteLine($"my_client.GameClient.IdPlayer1 : {my_client.GameClient.IdPlayer1 }; my_client.GameClient.IdPlayer2: {my_client.GameClient.IdPlayer2}; my_client.Opponent.Id : {my_client.Opponent.Id}");
+                        {
+                            Vector3 position = new Vector3();
+                            int x = 0;
+                            int y = 0;
+                            int z = 0;
+                            Console.WriteLine("Quelle est la coordonnee x (0,1 ou 2) de la position que vous voulez jouer ? (La couche)");
+                            x = (int.Parse(Console.ReadLine()));
+                            position.X = x;
+                            Console.WriteLine("Quelle est la coordonnee y (0,1 ou 2) de la position que vous voulez jouer ? (la ligne) ");
+                            y = (int.Parse(Console.ReadLine()));
+                            position.Y = y;
+                            Console.WriteLine("Quelle est la coordonnee z (0,1 ou 2) de la position que vous voulez jouer ? (la colonne)");
+                            z = (int.Parse(Console.ReadLine()));
+                            position.Z = z;
+                            Messaging.SendPositionPlayer(my_client.Stream, position);
+                        }
                     }
                     else
                     {
-                        Console.WriteLine($"Aucun adversaire n'est attribué");
+                        Console.WriteLine("Commande inconnue");
                     }
                 }
-                else if (choice == "10")
+                catch (System.IO.IOException ex)
                 {
-                    Messaging.AskGameBoard(my_client.Stream);
-                    Console.WriteLine($"Requête envoyée");
+                    Console.WriteLine("You have been disconnected from the server, please connect again");
+                    my_client.tryDisconnect();
                 }
-                else if (choice == "11")
-                {
-                    my_client.DisplayGameBoard();
-                }
-                else if (choice == "12")
-                {
-                    Console.WriteLine($"my_client.GameClient.Mode : {my_client.GameClient.Mode }; GameMode.Player1: {GameMode.Player1}; GameMode.Player2 : {GameMode.Player2}");
-                    Console.WriteLine($"my_client.GameClient.IdPlayer1 : {my_client.GameClient.IdPlayer1 }; my_client.GameClient.IdPlayer2: {my_client.GameClient.IdPlayer2}; my_client.Opponent.Id : {my_client.Opponent.Id}");
-                    {
-                        Vector3 position = new Vector3();
-                        int x = 0;
-                        int y = 0;
-                        int z = 0;
-                        Console.WriteLine("Quelle est la coordonnee x (0,1 ou 2) de la position que vous voulez jouer ? (La couche)");
-                        x = (int.Parse(Console.ReadLine()));
-                        position.X = x;
-                        Console.WriteLine("Quelle est la coordonnee y (0,1 ou 2) de la position que vous voulez jouer ? (la ligne) ");
-                        y = (int.Parse(Console.ReadLine()));
-                        position.Y = y;
-                        Console.WriteLine("Quelle est la coordonnee z (0,1 ou 2) de la position que vous voulez jouer ? (la colonne)");
-                        z = (int.Parse(Console.ReadLine()));
-                        position.Z = z;
-                        Messaging.SendPositionPlayer(my_client.Stream, position);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Commande inconnue");
-                }
+                
 
             }
 

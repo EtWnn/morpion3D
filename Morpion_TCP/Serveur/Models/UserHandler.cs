@@ -44,29 +44,32 @@ namespace Serveur.Models
                 
             }
         }
-        
-
-        
-        
 
 
+
+
+
+        public bool KeepChatting;
         public int Id { get; private set; }
         public string UserName { get; set; }
-        public NetworkStream stream;
-        public TcpClient clientSocket { get; set; }
+        public NetworkStream Stream;
+        public Mutex StreamMutex;
+        public TcpClient ClientSocket { get; set; }
         public ModelGame.Game Game { get; set; }
-        public readonly string log_file;
-
-        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex, string log_file)
+        public readonly string LogFile;
+        public Mutex LogMutex;
+        public UserHandler(TcpClient inClientSocket, int id, Dictionary<int, UserHandler> userHandlers, Mutex usersMutex, string log_file, Mutex logMutex)
         {
-            this.clientSocket = inClientSocket;
+            this.ClientSocket = inClientSocket;
             this.UserName = "default_" + id.ToString();
             this.Id = id;
             this.Game = null;
             this.UsersHandlers = userHandlers;
             this.usersMutex = usersMutex;
-            this.log_file = log_file;
-
+            this.LogFile = log_file;
+            this.KeepChatting = true;
+            this.StreamMutex = new Mutex();
+            this.LogMutex = logMutex;
 
 
         }
@@ -79,61 +82,62 @@ namespace Serveur.Models
 
         private void DoChat()
         {
-            bool continuer = true;
-            stream = this.clientSocket.GetStream();
-            Messaging.SendMessage(stream, "Hi new user! You have been assigned the id " + this.Id.ToString() );
+            StreamMutex.WaitOne();
+            Stream = this.ClientSocket.GetStream();
+            Messaging.SendMessage(this, "Hi new user! You have been assigned the id " + this.Id.ToString() );
+            StreamMutex.ReleaseMutex();
 
-            while (continuer)
+            while (KeepChatting)
             {
                 
                 try
                 {
                     Byte[] bytes = new Byte[5];
-                    int NombreOctets = stream.Read(bytes, 0, bytes.Length);
-                    if(NombreOctets >= 5) //minimum number of bytes for CMD + length to follow
+                    StreamMutex.WaitOne();
+                    int NombreOctets = Stream.Read(bytes, 0, bytes.Length);
+                    StreamMutex.ReleaseMutex();
+                    if (NombreOctets >= 5) //minimum number of bytes for CMD + length to follow
                     {
                         
                         string cmd = System.Text.Encoding.UTF8.GetString(bytes, 0, 3);
                         int following_length = BitConverter.ToInt16(bytes, 3);
 
-                        Messaging.WriteLog(log_file, $"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
+                        Messaging.WriteLog(this, $"command recieved from client {this.UserName} Id {this.Id} : {cmd} de taille {following_length} {NombreOctets}");
                         byte[] following_bytes = new byte[following_length];
                         if(following_length > 0)
                         {
-                            stream.Read(following_bytes, 0, following_bytes.Length);
+                            StreamMutex.WaitOne();
+                            Stream.Read(following_bytes, 0, following_bytes.Length);
+                            StreamMutex.ReleaseMutex();
                         }
 
                         byte[] response = UserHandler.methods[(NomCommande)Enum.Parse(typeof(NomCommande), cmd)](following_bytes, this);
 
-                        if(response.Length > 0)
+                        if (response.Length > 0)
                         {
-                            stream.Write(response, 0, response.Length);
+                            StreamMutex.WaitOne();
+                            Stream.Write(response, 0, response.Length);
+                            StreamMutex.ReleaseMutex();
                         }
                     }
                     
 
                     
                 }
-                catch (Exception ex) //à faire: prendre en compte la fermeture innatendue du canal par le client
+                catch (System.IO.IOException ex) //à faire: prendre en compte la fermeture inatendue du canal par le client
                 {
-                    if(ex is System.IO.IOException)
-                    {
-                        continuer = false;
-                        Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
+                    KeepChatting = false;
+                    
+                    Messaging.WriteLog(log_file, $"the user {this.UserName} Id {this.Id} got disconnected");
 
-                        if(Game != null) //si le joueur était en jeu
-                        {
-                            Messaging.SendNotifcationDisconnection(stream, this);
-                            // à faire: prévenir l'autre joueur
-
-                            Game = null;
-                        }
-                    }
-                    else
+                    if(Game != null) //si le joueur était en jeu
                     {
-                        throw;
+                        Messaging.SendNotifcationDisconnection(stream, this);
+                        // à faire: prévenir l'autre joueur
+                    	Game = null;
                     }
                 }
+                this.ClientSocket.Close();
             }
 
         }
@@ -150,20 +154,6 @@ namespace Serveur.Models
             username_bytes.CopyTo(bytes, id_bytes.Length + username_length_bytes.Length);
 
             return bytes;
-        }
-
-        public bool IsAlive()
-        {
-            try
-            {
-                byte[] test = new byte[1];
-                this.stream.Write(test, 0, test.Length);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-            return true;
         }
     }
 }

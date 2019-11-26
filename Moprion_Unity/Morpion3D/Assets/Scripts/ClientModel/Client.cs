@@ -13,6 +13,7 @@ namespace MyClient
 {
     public class Client
     {
+        public readonly string log_file;
         public Int32 port = 13000;
         public IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
@@ -115,7 +116,7 @@ namespace MyClient
             if (this._socket != null && this._socket.Connected)
             {
                 this._continueListen = false;
-                this._socket.Disconnect(false);
+                this._socket.Close();
 
                 is_connected = false;
                 Disconnected?.Invoke(this, EventArgs.Empty);
@@ -181,7 +182,6 @@ namespace MyClient
                         {
                             //Messaging.RecieveMessage(following_bytes);
                         }
-                        else
                         {
                             Client.methods[cmd_type](following_bytes, this);
                             Debug.Log(cmd_type);
