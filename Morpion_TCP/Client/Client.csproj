@@ -49,6 +49,7 @@
     <Compile Include="ModelGame\Game.cs" />
     <Compile Include="ModelGame\GameBoard.cs" />
     <Compile Include="ModelGame\Serialization.cs" />
+    <Compile Include="Models\LogWriter.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
